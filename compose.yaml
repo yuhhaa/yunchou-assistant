@@ -1,0 +1,90 @@
+x-app: &app
+  build: ./backend
+  image: ${COMPOSE_PROJECT_NAME:-ict-fleet}-backend:local
+  restart: unless-stopped
+  environment: &environment
+    DATABASE_URL: postgresql+psycopg://fleet:${POSTGRES_PASSWORD:?Initialize secrets first}@postgres:5432/fleet
+    REDIS_URL: redis://:${REDIS_PASSWORD:?Initialize secrets first}@redis:6379/0
+    LOGIN_SIGNING_KEY: ${LOGIN_SIGNING_KEY:?Initialize secrets first}
+    TASK_TOKEN_SIGNING_KEY: ${TASK_TOKEN_SIGNING_KEY:?Initialize secrets first}
+    TOOL_SERVICE_KEY: ${TOOL_SERVICE_KEY:?Initialize secrets first}
+    ENVIRONMENT: production
+    CLOCK_MODE: SIMULATION
+    SIMULATION_TIME: ${SIMULATION_TIME:-2026-10-26T10:00:00+08:00}
+    AGENT_MODE: ${AGENT_MODE:-local}
+    DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+    DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-flash}
+    DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+    CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-[]}
+    AMAP_WEB_SERVICE_KEY: ${AMAP_WEB_SERVICE_KEY:-}
+    AMAP_REQUEST_TIMEOUT_SECONDS: ${AMAP_REQUEST_TIMEOUT_SECONDS:-10}
+    AMAP_CACHE_TTL_SECONDS: ${AMAP_CACHE_TTL_SECONDS:-300}
+    AMAP_TOTAL_BUDGET_SECONDS: ${AMAP_TOTAL_BUDGET_SECONDS:-60}
+    DEMO_DISPATCHER_PASSWORD: ${DEMO_DISPATCHER_PASSWORD:?Initialize secrets first}
+    DEMO_DRIVER_PASSWORD: ${DEMO_DRIVER_PASSWORD:?Initialize secrets first}
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    migrate:
+      condition: service_completed_successfully
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fleet
+      POSTGRES_USER: fleet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Initialize secrets first}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fleet -d fleet"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Initialize secrets first}
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction", "--requirepass", "${REDIS_PASSWORD:?Initialize secrets first}"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  migrate:
+    <<: *app
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+  api:
+    <<: *app
+    ports:
+      - "${API_HOST:-127.0.0.1}:${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/ready', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 10
+      start_period: 10s
+  worker-compute:
+    <<: *app
+    command: ["celery", "-A", "app.worker:celery", "worker", "-Q", "compute", "--concurrency=1", "--loglevel=INFO", "--hostname=compute@%h"]
+  worker-chat:
+    <<: *app
+    command: ["celery", "-A", "app.worker:celery", "worker", "-Q", "chat", "--concurrency=1", "--loglevel=INFO", "--hostname=chat@%h"]
+  maintenance:
+    <<: *app
+    command: ["python", "-m", "app.maintenance"]
+
+volumes:
+  postgres-data:
+  redis-data:

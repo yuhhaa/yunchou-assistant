@@ -1,0 +1,295 @@
+{
+  "city": "武汉市",
+  "source": "SIMULATION",
+  "simulation": true,
+  "dataset_version": "WUHAN_DEMO_V1",
+  "coordinate_system": "GCJ02",
+  "road_service_used": false,
+  "center": [
+    114.3,
+    30.59
+  ],
+  "clock_mode": "SIMULATION",
+  "clock_time": "2026-10-26T10:00:00+08:00",
+  "calculation_routing_source": "SIMULATION",
+  "calculation_routing_version": "R1",
+  "retrieved_at": "2026-11-04T10:38:35.529461+00:00",
+  "notice": "武汉模拟点位与示意连线；不代表真实地址、道路或实时GPS，里程和ETA请读取业务分析。",
+  "points": [
+    {
+      "node_id": "A",
+      "name": "模拟配送点A",
+      "longitude": 114.32,
+      "latitude": 30.6,
+      "source": "SIMULATION"
+    },
+    {
+      "node_id": "B",
+      "name": "模拟配送点B",
+      "longitude": 114.31,
+      "latitude": 30.62,
+      "source": "SIMULATION"
+    },
+    {
+      "node_id": "C",
+      "name": "模拟配送点C",
+      "longitude": 114.35,
+      "latitude": 30.61,
+      "source": "SIMULATION"
+    },
+    {
+      "node_id": "D",
+      "name": "模拟配送点D",
+      "longitude": 114.28,
+      "latitude": 30.61,
+      "source": "SIMULATION"
+    },
+    {
+      "node_id": "E",
+      "name": "模拟配送点E",
+      "longitude": 114.27,
+      "latitude": 30.58,
+      "source": "SIMULATION"
+    },
+    {
+      "node_id": "F",
+      "name": "模拟配送点F",
+      "longitude": 114.31,
+      "latitude": 30.56,
+      "source": "SIMULATION"
+    },
+    {
+      "node_id": "G",
+      "name": "模拟配送点G",
+      "longitude": 114.34,
+      "latitude": 30.57,
+      "source": "SIMULATION"
+    },
+    {
+      "node_id": "H",
+      "name": "模拟配送点H",
+      "longitude": 114.36,
+      "latitude": 30.59,
+      "source": "SIMULATION"
+    },
+    {
+      "node_id": "W",
+      "name": "模拟仓库W",
+      "longitude": 114.3,
+      "latitude": 30.59,
+      "source": "SIMULATION"
+    }
+  ],
+  "routes": [
+    {
+      "vehicle_id": "V01",
+      "route_revision": 1,
+      "plan_id": null,
+      "plan_version": null,
+      "route_kind": "CURRENT",
+      "node_sequence": [
+        "W",
+        "A",
+        "B",
+        "C"
+      ],
+      "geometry_kind": "SCHEMATIC",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            114.3,
+            30.59
+          ],
+          [
+            114.32,
+            30.6
+          ],
+          [
+            114.31,
+            30.62
+          ],
+          [
+            114.35,
+            30.61
+          ]
+        ]
+      },
+      "distance_m": null,
+      "duration_seconds": null
+    },
+    {
+      "vehicle_id": "V02",
+      "route_revision": 1,
+      "plan_id": null,
+      "plan_version": null,
+      "route_kind": "CURRENT",
+      "node_sequence": [
+        "W",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H"
+      ],
+      "geometry_kind": "SCHEMATIC",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            114.3,
+            30.59
+          ],
+          [
+            114.28,
+            30.61
+          ],
+          [
+            114.27,
+            30.58
+          ],
+          [
+            114.31,
+            30.56
+          ],
+          [
+            114.34,
+            30.57
+          ],
+          [
+            114.36,
+            30.59
+          ]
+        ]
+      },
+      "distance_m": null,
+      "duration_seconds": null
+    },
+    {
+      "vehicle_id": "V03",
+      "route_revision": 1,
+      "plan_id": null,
+      "plan_version": null,
+      "route_kind": "CURRENT",
+      "node_sequence": [
+        "W",
+        "D",
+        "E",
+        "F",
+        "G"
+      ],
+      "geometry_kind": "SCHEMATIC",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            114.3,
+            30.59
+          ],
+          [
+            114.28,
+            30.61
+          ],
+          [
+            114.27,
+            30.58
+          ],
+          [
+            114.31,
+            30.56
+          ],
+          [
+            114.34,
+            30.57
+          ]
+        ]
+      },
+      "distance_m": null,
+      "duration_seconds": null
+    },
+    {
+      "vehicle_id": "V04",
+      "route_revision": 1,
+      "plan_id": null,
+      "plan_version": null,
+      "route_kind": "CURRENT",
+      "node_sequence": [
+        "W",
+        "H",
+        "D",
+        "E",
+        "F"
+      ],
+      "geometry_kind": "SCHEMATIC",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            114.3,
+            30.59
+          ],
+          [
+            114.36,
+            30.59
+          ],
+          [
+            114.28,
+            30.61
+          ],
+          [
+            114.27,
+            30.58
+          ],
+          [
+            114.31,
+            30.56
+          ]
+        ]
+      },
+      "distance_m": null,
+      "duration_seconds": null
+    },
+    {
+      "vehicle_id": "V05",
+      "route_revision": 1,
+      "plan_id": null,
+      "plan_version": null,
+      "route_kind": "CURRENT",
+      "node_sequence": [
+        "W",
+        "G",
+        "H",
+        "D",
+        "E"
+      ],
+      "geometry_kind": "SCHEMATIC",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            114.3,
+            30.59
+          ],
+          [
+            114.34,
+            30.57
+          ],
+          [
+            114.36,
+            30.59
+          ],
+          [
+            114.28,
+            30.61
+          ],
+          [
+            114.27,
+            30.58
+          ]
+        ]
+      },
+      "distance_m": null,
+      "duration_seconds": null
+    }
+  ]
+}

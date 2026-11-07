@@ -1,0 +1,454 @@
+/* Driver presentation only. Business state and shared dispatcher styles stay independent. */
+.driver-heading-copy h1 > span {
+  display: inline-block;
+  margin-left: 20px;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.driver-main .driver-map-intro {
+  margin: 0 0 14px;
+}
+.driver-main .driver-map-intro h2 {
+  font-size: 21px;
+  letter-spacing: -0.5px;
+}
+.driver-main .driver-map-intro .eyebrow {
+  font-size: 8px;
+}
+.driver-main .driver-feedback {
+  margin: 20px 0 0;
+}
+.driver-main .driver-feedback .section-header {
+  margin-bottom: 12px;
+}
+.driver-main .driver-incident {
+  padding: 15px 0;
+}
+.driver-main .driver-incident small {
+  line-height: 1.7;
+}
+.driver-main .map-availability-note {
+  padding: 12px 0 0;
+  max-width: none;
+}
+.driver-main .map-availability-note .eyebrow {
+  display: none;
+}
+.driver-main .map-availability-note p {
+  margin: 0;
+  line-height: 1.8;
+}
+.driver-main .map-controls .icon-button {
+  width: 44px;
+  height: 44px;
+}
+.driver-main .driver-timeline .route-stop {
+  min-height: 60px;
+}
+.driver-main .stop-execution .button-row > button {
+  min-height: 44px;
+}
+.driver-main .driver-desktop-nav button:focus-visible,
+.driver-main .driver-bottom-nav > :focus-visible {
+  outline: 2px solid var(--forest);
+  outline-offset: 4px;
+}
+
+@media (min-width: 1024px) {
+  .driver-app .app-header {
+    height: 82px;
+    padding: 0 clamp(28px, 3vw, 56px);
+    border-bottom: 1px solid var(--line);
+  }
+  .driver-main {
+    max-width: 1800px;
+    padding: 20px clamp(28px, 3vw, 56px) 48px;
+  }
+  .driver-main .driver-greeting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 0 0 16px;
+    margin: 0 0 20px;
+  }
+  .driver-main .driver-greeting h1 {
+    font-size: 28px;
+    line-height: 1.2;
+    margin: 5px 0 7px;
+  }
+  .driver-main .driver-greeting .eyebrow {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+  }
+  .driver-main .driver-greeting p {
+    font-size: 11px;
+  }
+  .driver-main .driver-desktop-nav {
+    position: static;
+    flex-shrink: 0;
+    gap: 3px;
+    padding: 4px;
+  }
+  .driver-main .driver-desktop-nav button {
+    min-height: 40px;
+    padding: 9px 15px;
+  }
+  .driver-main .driver-layout {
+    grid-template-columns: minmax(350px, 0.88fr) minmax(0, 1.65fr);
+    gap: clamp(24px, 2.4vw, 40px);
+    align-items: start;
+  }
+  .driver-main .driver-information {
+    min-width: 0;
+  }
+  .driver-main .next-stop-card {
+    padding: 20px 24px;
+    margin: 0 0 12px;
+    border-radius: 22px;
+  }
+  .driver-main .next-stop-top {
+    margin-bottom: 12px;
+    font-size: 11px;
+  }
+  .driver-main .next-stop-card h2 {
+    font-size: 25px;
+    line-height: 1.2;
+    margin: 4px 0 12px;
+  }
+  .driver-main .next-stop-meta {
+    gap: 0;
+  }
+  .driver-main .next-stop-meta > div {
+    flex: 1;
+  }
+  .driver-main .next-stop-meta > div + div {
+    border-left: 1px solid #ffffff24;
+    padding-left: 24px;
+  }
+  .driver-main .next-stop-meta small {
+    font-size: 10px;
+  }
+  .driver-main .next-stop-meta b {
+    font-size: 25px;
+    line-height: 1.2;
+  }
+  .driver-main .driver-eta-note {
+    font-size: 10px;
+    margin: 8px 0 12px;
+  }
+  .driver-main .lemon-button {
+    min-height: 44px;
+    font-size: 12px;
+  }
+  .driver-main .safety-note {
+    font-size: 10px;
+    line-height: 1.7;
+    margin-bottom: 16px;
+    align-items: start;
+  }
+  .driver-main .safety-note svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .driver-main .driver-timeline {
+    padding: 22px 24px;
+    margin: 0;
+    border-radius: 22px;
+  }
+  .driver-main .driver-timeline .route-stop {
+    padding-bottom: 18px;
+  }
+  .driver-main .driver-timeline .stop-body > b {
+    font-size: 13px;
+  }
+  .driver-main .driver-timeline .stop-body > small {
+    font-size: 10px;
+  }
+  .driver-main .driver-timeline .stop-state {
+    font-size: 11px;
+  }
+  .driver-main .driver-map-column {
+    padding-top: 0;
+    position: static;
+  }
+  .driver-main .driver-map-column > .map-view .map-canvas {
+    height: clamp(340px, 42vh, 510px);
+    min-height: 0;
+  }
+  /* A pending geographic source needs a clear status, not an oversized empty map. */
+  .driver-main
+    .driver-map-column
+    > .map-view
+    .map-canvas:has(.geography-missing) {
+    height: 230px;
+  }
+  .driver-main .map-header {
+    padding: 18px 22px 12px;
+  }
+  .driver-main .map-header h3 {
+    font-size: 19px;
+  }
+  .driver-main .map-mode-bar {
+    padding: 0 22px 14px;
+  }
+  .driver-main .geography-missing {
+    inset: 32px 18% 32px;
+    gap: 10px;
+  }
+  .driver-main .geography-missing > b {
+    font-size: 17px;
+  }
+  .driver-main .geography-missing > svg {
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+  }
+  .driver-main .map-canvas:has(.geography-missing) .map-position {
+    display: none;
+  }
+  .driver-main .map-scene-caption {
+    bottom: 14px;
+    left: 22px;
+    right: 22px;
+  }
+  .driver-main .map-footer {
+    padding: 14px 22px;
+  }
+  .driver-main .driver-route-summary {
+    padding: 16px 0;
+    gap: 20px;
+  }
+  .driver-main .driver-route-summary span {
+    font-size: 11px;
+  }
+  .driver-main .driver-route-summary b {
+    font-size: 14px;
+  }
+  .driver-main .driver-route-summary small {
+    font-size: 10px;
+  }
+  .driver-main .driver-feedback {
+    padding: 20px 24px;
+    border-radius: 22px;
+  }
+  .driver-main .driver-feedback .driver-incident,
+  .driver-main .driver-feedback .next-action-note {
+    max-width: none;
+  }
+  .driver-main .driver-information,
+  .driver-main .driver-map-column,
+  .driver-main .driver-feedback {
+    scroll-margin-top: 24px;
+  }
+}
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .driver-heading-copy h1 > span {
+    display: none;
+  }
+  .driver-main .driver-layout {
+    grid-template-columns: 350px minmax(0, 1fr);
+  }
+  .driver-main .driver-desktop-nav button {
+    padding-inline: 11px;
+  }
+  .driver-main .map-legend {
+    flex-wrap: wrap;
+  }
+}
+@media (min-width: 769px) and (max-width: 1023px) {
+  .driver-main {
+    max-width: none;
+    padding: 20px 28px 110px;
+  }
+  .driver-main .driver-heading-copy h1 > span {
+    font-size: 12px;
+  }
+  .driver-main .driver-layout {
+    grid-template-columns: minmax(320px, 1fr) minmax(0, 1fr);
+    gap: 22px;
+  }
+  .driver-main .driver-map-column .map-canvas:has(.geography-missing) {
+    height: 220px;
+    min-height: 220px;
+  }
+  .driver-main .map-position {
+    display: none;
+  }
+}
+@media (max-width: 768px) {
+  .driver-main {
+    max-width: none;
+    padding: 14px 22px calc(100px + env(safe-area-inset-bottom));
+  }
+  .driver-main .driver-greeting {
+    margin-bottom: 20px;
+  }
+  .driver-main .driver-greeting h1 {
+    font-size: 27px;
+  }
+  .driver-heading-copy h1 > span {
+    display: block;
+    margin: 7px 0 0;
+    font-size: 12px;
+  }
+  .driver-main .driver-greeting p {
+    font-size: 11px;
+    margin-top: 10px;
+  }
+  .driver-main .driver-layout {
+    gap: 16px;
+  }
+  .driver-main .driver-information > .next-stop-card {
+    padding: 23px;
+    border-radius: 23px;
+  }
+  .driver-main .next-stop-top {
+    margin-bottom: 23px;
+  }
+  .driver-main .next-stop-card h2 {
+    font-size: 27px;
+    margin-bottom: 20px;
+  }
+  .driver-main .next-stop-meta {
+    gap: 40px;
+  }
+  .driver-main .next-stop-meta b {
+    font-size: 28px;
+  }
+  .driver-main .lemon-button {
+    min-height: 48px;
+  }
+  .driver-main .safety-note {
+    line-height: 1.8;
+    align-items: start;
+  }
+  .driver-main .safety-note svg {
+    flex-shrink: 0;
+  }
+  .driver-main .driver-information > .driver-timeline {
+    order: 2;
+    padding: 22px;
+  }
+  .driver-main .driver-map-column {
+    order: 3;
+    padding-top: 0;
+  }
+  .driver-main .driver-map-intro {
+    margin-bottom: 12px;
+  }
+  .driver-main .driver-map-intro h2 {
+    font-size: 19px;
+  }
+  .driver-main .driver-map-intro .eyebrow {
+    display: none;
+  }
+  .driver-main .map-header {
+    padding: 14px 16px 10px;
+  }
+  .driver-main .map-header .eyebrow {
+    display: none;
+  }
+  .driver-main .map-header h3 {
+    font-size: 17px;
+  }
+  .driver-main .map-mode-bar {
+    padding: 0 16px 12px;
+    gap: 8px;
+  }
+  .driver-main .driver-map-column .map-canvas {
+    height: 180px;
+    min-height: 0;
+  }
+  .driver-main .map-canvas:has(.geography-missing) .map-position,
+  .driver-main .map-canvas:has(.geography-missing) .map-scene-caption {
+    display: none;
+  }
+  .driver-main .geography-missing {
+    inset: 12px 22px;
+    gap: 8px;
+  }
+  .driver-main .geography-missing > svg {
+    width: 32px;
+    height: 32px;
+    padding: 7px;
+  }
+  .driver-main .geography-missing > b {
+    font-size: 15px;
+  }
+  .driver-main .geography-missing p {
+    font-size: 11px;
+    line-height: 1.8;
+  }
+  .driver-main .map-footer {
+    padding: 12px 16px;
+  }
+  .driver-main .map-legend {
+    display: none;
+  }
+  .driver-main .map-footer > small {
+    font-size: 9px;
+  }
+  .driver-main .driver-route-summary {
+    padding: 16px 0;
+  }
+  .driver-main .driver-route-summary span {
+    font-size: 10px;
+  }
+  .driver-main .driver-route-summary small {
+    font-size: 9px;
+  }
+  .driver-main .driver-feedback {
+    padding: 20px;
+  }
+  .driver-app .driver-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .driver-main .driver-timeline .stop-state {
+    font-size: 10px;
+  }
+}
+/* Wide touch screens keep one task column while using the card's available width. */
+@media (min-width: 600px) and (max-width: 768px) {
+  .driver-heading-copy h1 > span {
+    display: inline;
+    margin-left: 18px;
+  }
+  .driver-main .driver-information > .next-stop-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px 24px;
+  }
+  .driver-main .next-stop-top {
+    grid-column: 1 / -1;
+    margin: 0 0 8px;
+  }
+  .driver-main .next-stop-card > .eyebrow {
+    grid-column: 1;
+    align-self: end;
+  }
+  .driver-main .next-stop-card h2 {
+    grid-column: 1;
+    grid-row: 3;
+    font-size: 25px;
+    line-height: 1.3;
+    margin: 0;
+  }
+  .driver-main .next-stop-meta {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    align-items: center;
+    gap: 30px;
+    padding-left: 24px;
+    border-left: 1px solid #ffffff24;
+  }
+  .driver-main .driver-eta-note {
+    grid-column: 1 / -1;
+    margin: 6px 0 8px;
+  }
+  .driver-main .next-stop-card > .lemon-button {
+    grid-column: 1 / -1;
+  }
+}

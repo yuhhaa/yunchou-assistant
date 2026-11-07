@@ -1,0 +1,58 @@
+name: ict-track1-cloud
+
+x-app: &app
+  image: ${BACKEND_IMAGE:-ict-track1-backend:local}
+  build:
+    context: ../../backend
+  restart: unless-stopped
+  environment: &environment
+    ENVIRONMENT: production
+    DATABASE_URL: ${DATABASE_URL:?Set private RDS PostgreSQL connection URL}
+    REDIS_URL: ${REDIS_URL:?Set private DCS Redis connection URL}
+    LOGIN_SIGNING_KEY: ${LOGIN_SIGNING_KEY:?Set private signing key}
+    TASK_TOKEN_SIGNING_KEY: ${TASK_TOKEN_SIGNING_KEY:?Set private signing key}
+    TOOL_SERVICE_KEY: ${TOOL_SERVICE_KEY:?Set private compatibility-tool key}
+    AGENT_MODE: ${AGENT_MODE:-local}
+    DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+    DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-flash}
+    DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+    AMAP_WEB_SERVICE_KEY: ${AMAP_WEB_SERVICE_KEY:-}
+    AMAP_REQUEST_TIMEOUT_SECONDS: ${AMAP_REQUEST_TIMEOUT_SECONDS:-10}
+    AMAP_CACHE_TTL_SECONDS: ${AMAP_CACHE_TTL_SECONDS:-300}
+    AMAP_TOTAL_BUDGET_SECONDS: ${AMAP_TOTAL_BUDGET_SECONDS:-60}
+    CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-[]}
+    CLOCK_MODE: ${CLOCK_MODE:-SIMULATION}
+    SIMULATION_TIME: ${SIMULATION_TIME:-2026-10-26T10:00:00+08:00}
+    DEMO_DISPATCHER_PASSWORD: ${DEMO_DISPATCHER_PASSWORD:-}
+    DEMO_DRIVER_PASSWORD: ${DEMO_DRIVER_PASSWORD:-}
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+
+services:
+  migrate:
+    <<: *app
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    depends_on: {}
+  api:
+    <<: *app
+    ports:
+      - "${API_HOST:-127.0.0.1}:${API_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/ready', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 10
+      start_period: 10s
+  worker-compute:
+    <<: *app
+    stop_grace_period: 90s
+    command: ["celery", "-A", "app.worker:celery", "worker", "-Q", "compute", "--concurrency=1", "--loglevel=INFO", "--hostname=compute@%h"]
+  worker-chat:
+    <<: *app
+    stop_grace_period: 90s
+    command: ["celery", "-A", "app.worker:celery", "worker", "-Q", "chat", "--concurrency=1", "--loglevel=INFO", "--hostname=chat@%h"]
+  maintenance:
+    <<: *app
+    command: ["python", "-m", "app.maintenance"]

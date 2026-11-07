@@ -1,0 +1,2802 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "运筹助手五工具（契约 1.0）",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/v1/agent-tools/delivery-context": {
+      "get": {
+        "summary": "查询授权配送任务",
+        "operationId": "get_delivery_context",
+        "parameters": [
+          {
+            "name": "order_no",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Order No"
+            }
+          },
+          {
+            "name": "vehicle_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vehicle Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Trace-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Contract-Version",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1.0"
+              ],
+              "default": "1.0"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功，data包含结构化业务结果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ContextOutput]"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ContextOutput]"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ContextOutput]"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ContextOutput]"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ContextOutput]"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ContextOutput]"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ContextOutput]"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ContextOutput]"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ContextOutput]"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ContextOutput]"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ContextOutput]"
+                }
+              }
+            }
+          }
+        },
+        "description": "用户查单或报告异常前使用。司机默认本人车辆；调度员须选择订单或车辆。返回不可变快照、完整相关路线与数据来源，不返回路网矩阵。",
+        "security": [
+          {
+            "ToolServiceKey": [],
+            "TaskContext": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-tools/incidents": {
+      "post": {
+        "summary": "登记或补充配送异常",
+        "operationId": "upsert_incident",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncidentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "成功，data包含结构化业务结果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "异常已保存，尚未代表解决。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          }
+        },
+        "description": "明确异常类型、车辆及必要事实后使用；道路延误必须有明确整数分钟数。CREATE 返回201，UPDATE 返回200；保存不等于解决，窗口须人工核实。写入必须复用逻辑幂等键。",
+        "security": [
+          {
+            "ToolServiceKey": [],
+            "TaskContext": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Trace-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Contract-Version",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1.0"
+              ],
+              "default": "1.0"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,256}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-tools/impact-analyses": {
+      "post": {
+        "summary": "提交异常影响分析",
+        "operationId": "analyze_impact",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImpactInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "持久化受理；请查询任务状态。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          }
+        },
+        "description": "须有当前事件版本和未过期快照。202仅代表已接收，保存job_id并通过T05查询；QUEUED/RUNNING时返回处理中，不宣称分析成功。",
+        "security": [
+          {
+            "ToolServiceKey": [],
+            "TaskContext": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Trace-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Contract-Version",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1.0"
+              ],
+              "default": "1.0"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,256}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-tools/recovery-plans": {
+      "post": {
+        "summary": "生成待审批恢复候选",
+        "operationId": "generate_recovery_plans",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanGenerationInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "持久化受理；请查询任务状态。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          }
+        },
+        "description": "须有匹配当前事件、快照的有效analysis_id。202后保存job_id查询；无可行候选为正常有限搜索结果。只生成候选，调度批准和司机接收走人工接口。",
+        "security": [
+          {
+            "ToolServiceKey": [],
+            "TaskContext": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Trace-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Contract-Version",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1.0"
+              ],
+              "default": "1.0"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,256}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-tools/status": {
+      "get": {
+        "summary": "核对事件、计算任务与原请求状态",
+        "operationId": "get_operation_status",
+        "parameters": [
+          {
+            "name": "object_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Object Type"
+            }
+          },
+          {
+            "name": "object_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Object Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Trace-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Contract-Version",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1.0"
+              ],
+              "default": "1.0"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功，data包含结构化业务结果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ToolStatusOutput]"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ToolStatusOutput]"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ToolStatusOutput]"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ToolStatusOutput]"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ToolStatusOutput]"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ToolStatusOutput]"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ToolStatusOutput]"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ToolStatusOutput]"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ToolStatusOutput]"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ToolStatusOutput]"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[ToolStatusOutput]"
+                }
+              }
+            }
+          }
+        },
+        "description": "只查询授权的事件、分析、候选、计算JOB、OPERATION或幂等REQUEST。工具禁止查询CHAT；202后先2秒再5秒轮询，每轮最多8次工具调用（含本工具）。超时先核对原键，不新建异常。",
+        "security": [
+          {
+            "ToolServiceKey": [],
+            "TaskContext": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalysisOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "analysis_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "incident_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Incident Id",
+            "type": "string"
+          },
+          "incident_version": {
+            "title": "Incident Version",
+            "type": "integer"
+          },
+          "snapshot_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "analysis_status": {
+            "enum": [
+              "VALID",
+              "STALE"
+            ],
+            "title": "Analysis Status",
+            "type": "string"
+          },
+          "risk_order_count": {
+            "title": "Risk Order Count",
+            "type": "integer"
+          },
+          "order_impacts": {
+            "items": {
+              "$ref": "#/components/schemas/OrderImpact"
+            },
+            "title": "Order Impacts",
+            "type": "array"
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Fields",
+            "type": "array"
+          }
+        },
+        "required": [
+          "analysis_id",
+          "incident_id",
+          "incident_version",
+          "snapshot_id",
+          "analysis_status",
+          "risk_order_count",
+          "order_impacts",
+          "missing_fields"
+        ],
+        "title": "AnalysisOutput",
+        "type": "object"
+      },
+      "Change": {
+        "additionalProperties": false,
+        "properties": {
+          "change_type": {
+            "enum": [
+              "RESEQUENCE",
+              "REASSIGN"
+            ],
+            "title": "Change Type",
+            "type": "string"
+          },
+          "order_no": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Order No",
+            "type": "string"
+          },
+          "from_vehicle_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "From Vehicle Id",
+            "type": "string"
+          },
+          "to_vehicle_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "To Vehicle Id",
+            "type": "string"
+          },
+          "old_sequence_no": {
+            "title": "Old Sequence No",
+            "type": "integer"
+          },
+          "new_sequence_no": {
+            "title": "New Sequence No",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "change_type",
+          "order_no",
+          "from_vehicle_id",
+          "to_vehicle_id",
+          "old_sequence_no",
+          "new_sequence_no"
+        ],
+        "title": "Change",
+        "type": "object"
+      },
+      "Constraints": {
+        "additionalProperties": false,
+        "properties": {
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "violations": {
+            "items": {
+              "$ref": "#/components/schemas/Violation"
+            },
+            "title": "Violations",
+            "type": "array"
+          },
+          "checked_at": {
+            "format": "date-time",
+            "title": "Checked At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "passed",
+          "violations",
+          "checked_at"
+        ],
+        "title": "Constraints",
+        "type": "object"
+      },
+      "ContextOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "snapshot_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "snapshot_version": {
+            "title": "Snapshot Version",
+            "type": "integer"
+          },
+          "valid_until": {
+            "format": "date-time",
+            "title": "Valid Until",
+            "type": "string"
+          },
+          "clock_mode": {
+            "enum": [
+              "REALTIME",
+              "SIMULATION"
+            ],
+            "title": "Clock Mode",
+            "type": "string"
+          },
+          "clock_time": {
+            "format": "date-time",
+            "title": "Clock Time",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "SIMULATION",
+              "BUSINESS"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "vehicles": {
+            "items": {
+              "$ref": "#/components/schemas/VehicleOutput"
+            },
+            "title": "Vehicles",
+            "type": "array"
+          },
+          "orders": {
+            "items": {
+              "$ref": "#/components/schemas/OrderOutput"
+            },
+            "title": "Orders",
+            "type": "array"
+          },
+          "route_stops": {
+            "items": {
+              "$ref": "#/components/schemas/RouteStopInput"
+            },
+            "title": "Route Stops",
+            "type": "array"
+          },
+          "routing_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routing Version"
+          },
+          "routing_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "SIMULATION",
+                  "BUSINESS",
+                  "AMAP"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Routing Source"
+          },
+          "routing_ready": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Routing Ready"
+          },
+          "routing_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Routing Id"
+          },
+          "ruleset_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ruleset Version"
+          },
+          "fleet_set_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Fleet Set Version"
+          },
+          "warehouse_node_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Warehouse Node Id"
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Fields",
+            "type": "array"
+          },
+          "selected_order_no": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Order No"
+          }
+        },
+        "required": [
+          "snapshot_id",
+          "snapshot_version",
+          "valid_until",
+          "clock_mode",
+          "clock_time",
+          "source",
+          "vehicles",
+          "orders",
+          "route_stops",
+          "routing_version",
+          "missing_fields",
+          "selected_order_no"
+        ],
+        "title": "ContextOutput",
+        "type": "object"
+      },
+      "Dependency": {
+        "additionalProperties": false,
+        "properties": {
+          "entity_type": {
+            "enum": [
+              "INCIDENT",
+              "VEHICLE",
+              "ORDER",
+              "ROUTING",
+              "RULESET",
+              "FLEET_SET"
+            ],
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "entity_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "entity_type",
+          "entity_id",
+          "version"
+        ],
+        "title": "Dependency",
+        "type": "object"
+      },
+      "Envelope[ContextOutput]": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContextOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Id"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data",
+          "error",
+          "request_id",
+          "operation_id",
+          "meta"
+        ],
+        "title": "Envelope[ContextOutput]",
+        "type": "object"
+      },
+      "Envelope[IncidentOutput]": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IncidentOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Id"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data",
+          "error",
+          "request_id",
+          "operation_id",
+          "meta"
+        ],
+        "title": "Envelope[IncidentOutput]",
+        "type": "object"
+      },
+      "Envelope[QueuedOutput]": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QueuedOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Id"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data",
+          "error",
+          "request_id",
+          "operation_id",
+          "meta"
+        ],
+        "title": "Envelope[QueuedOutput]",
+        "type": "object"
+      },
+      "Envelope[ToolStatusOutput]": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolStatusOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Id"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "data",
+          "error",
+          "request_id",
+          "operation_id",
+          "meta"
+        ],
+        "title": "Envelope[ToolStatusOutput]",
+        "type": "object"
+      },
+      "ErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Fields",
+            "type": "array"
+          },
+          "retryable": {
+            "title": "Retryable",
+            "type": "boolean"
+          },
+          "next_action": {
+            "enum": [
+              "NONE",
+              "ASK_USER",
+              "ANALYZE_IMPACT",
+              "GENERATE_PLANS",
+              "REFRESH_CONTEXT",
+              "VERIFY_WINDOW",
+              "POLL",
+              "WAIT_DISPATCHER",
+              "WAIT_DRIVER",
+              "MANUAL_REVIEW",
+              "RETRY_SAME_KEY",
+              "LOGIN"
+            ],
+            "title": "Next Action",
+            "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          }
+        },
+        "required": [
+          "code",
+          "reason",
+          "missing_fields",
+          "retryable",
+          "next_action",
+          "details"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "GenerationOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "solution_status": {
+            "enum": [
+              "FEASIBLE",
+              "NO_FEASIBLE_PLAN_IN_SEARCH"
+            ],
+            "title": "Solution Status",
+            "type": "string"
+          },
+          "search_scope": {
+            "$ref": "#/components/schemas/SearchScope"
+          },
+          "plans": {
+            "items": {
+              "$ref": "#/components/schemas/PlanOutput"
+            },
+            "title": "Plans",
+            "type": "array"
+          },
+          "infeasible_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/Violation"
+            },
+            "title": "Infeasible Reasons",
+            "type": "array"
+          },
+          "computed_at": {
+            "format": "date-time",
+            "title": "Computed At",
+            "type": "string"
+          },
+          "plan_group_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Plan Group Id",
+            "type": "string"
+          },
+          "analysis_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Analysis Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "solution_status",
+          "search_scope",
+          "plans",
+          "infeasible_reasons",
+          "computed_at",
+          "plan_group_id",
+          "analysis_id"
+        ],
+        "title": "GenerationOutput",
+        "type": "object"
+      },
+      "ImpactInput": {
+        "properties": {
+          "incident_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Incident Id"
+          },
+          "expected_incident_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Incident Version"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Snapshot Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "incident_id",
+          "expected_incident_version",
+          "snapshot_id"
+        ],
+        "title": "ImpactInput"
+      },
+      "IncidentInput": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "CREATE",
+              "UPDATE"
+            ],
+            "title": "Mode"
+          },
+          "incident_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incident Id"
+          },
+          "expected_incident_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Incident Version"
+          },
+          "event_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ROAD_DELAY",
+                  "RECEIVING_WINDOW_CHANGE",
+                  "VEHICLE_BREAKDOWN"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Type"
+          },
+          "vehicle_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Id"
+          },
+          "order_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order No"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "delay_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1440.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delay Minutes"
+          },
+          "reported_window_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported Window Start"
+          },
+          "reported_window_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported Window End"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "title": "IncidentInput"
+      },
+      "IncidentOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "incident_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Incident Id",
+            "type": "string"
+          },
+          "incident_version": {
+            "title": "Incident Version",
+            "type": "integer"
+          },
+          "event_type": {
+            "enum": [
+              "ROAD_DELAY",
+              "RECEIVING_WINDOW_CHANGE",
+              "VEHICLE_BREAKDOWN"
+            ],
+            "title": "Event Type",
+            "type": "string"
+          },
+          "vehicle_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Vehicle Id",
+            "type": "string"
+          },
+          "order_no": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order No"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "delay_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delay Minutes"
+          },
+          "reported_window_start": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported Window Start"
+          },
+          "reported_window_end": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported Window End"
+          },
+          "reported_at": {
+            "format": "date-time",
+            "title": "Reported At",
+            "type": "string"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred At"
+          },
+          "can_analyze": {
+            "title": "Can Analyze",
+            "type": "boolean"
+          },
+          "superseded_plan_ids": {
+            "items": {
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "type": "string"
+            },
+            "title": "Superseded Plan Ids",
+            "type": "array"
+          },
+          "next_action": {
+            "enum": [
+              "NONE",
+              "ASK_USER",
+              "ANALYZE_IMPACT",
+              "GENERATE_PLANS",
+              "REFRESH_CONTEXT",
+              "VERIFY_WINDOW",
+              "POLL",
+              "WAIT_DISPATCHER",
+              "WAIT_DRIVER",
+              "MANUAL_REVIEW",
+              "RETRY_SAME_KEY",
+              "LOGIN"
+            ],
+            "title": "Next Action",
+            "type": "string"
+          }
+        },
+        "required": [
+          "incident_id",
+          "incident_version",
+          "event_type",
+          "vehicle_id",
+          "order_no",
+          "status",
+          "description",
+          "delay_minutes",
+          "reported_window_start",
+          "reported_window_end",
+          "reported_at",
+          "occurred_at",
+          "can_analyze",
+          "superseded_plan_ids",
+          "next_action"
+        ],
+        "title": "IncidentOutput",
+        "type": "object"
+      },
+      "JsonValue": {},
+      "Meta": {
+        "additionalProperties": false,
+        "properties": {
+          "contract_version": {
+            "const": "1.0",
+            "title": "Contract Version",
+            "type": "string"
+          },
+          "data_time": {
+            "format": "date-time",
+            "title": "Data Time",
+            "type": "string"
+          },
+          "replayed": {
+            "title": "Replayed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contract_version",
+          "data_time",
+          "replayed"
+        ],
+        "title": "Meta",
+        "type": "object"
+      },
+      "Metrics": {
+        "additionalProperties": false,
+        "properties": {
+          "unresolved_order_count": {
+            "title": "Unresolved Order Count",
+            "type": "integer"
+          },
+          "late_order_count": {
+            "title": "Late Order Count",
+            "type": "integer"
+          },
+          "high_priority_delay_minutes": {
+            "title": "High Priority Delay Minutes",
+            "type": "integer"
+          },
+          "total_delay_minutes": {
+            "title": "Total Delay Minutes",
+            "type": "integer"
+          },
+          "changed_order_count": {
+            "title": "Changed Order Count",
+            "type": "integer"
+          },
+          "reassigned_order_count": {
+            "title": "Reassigned Order Count",
+            "type": "integer"
+          },
+          "sequence_inversion_count": {
+            "title": "Sequence Inversion Count",
+            "type": "integer"
+          },
+          "total_distance_m": {
+            "title": "Total Distance M",
+            "type": "integer"
+          },
+          "extra_distance_m": {
+            "title": "Extra Distance M",
+            "type": "integer"
+          },
+          "computation_ms": {
+            "title": "Computation Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "unresolved_order_count",
+          "late_order_count",
+          "high_priority_delay_minutes",
+          "total_delay_minutes",
+          "changed_order_count",
+          "reassigned_order_count",
+          "sequence_inversion_count",
+          "total_distance_m",
+          "extra_distance_m",
+          "computation_ms"
+        ],
+        "title": "Metrics",
+        "type": "object"
+      },
+      "OperationOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "operation_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Operation Id",
+            "type": "string"
+          },
+          "operation_type": {
+            "title": "Operation Type",
+            "type": "string"
+          },
+          "operation_status": {
+            "title": "Operation Status",
+            "type": "string"
+          },
+          "resource_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Type"
+          },
+          "resource_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          },
+          "job_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Id"
+          }
+        },
+        "required": [
+          "operation_id",
+          "operation_type",
+          "operation_status",
+          "resource_type",
+          "resource_id",
+          "job_id"
+        ],
+        "title": "OperationOutput",
+        "type": "object"
+      },
+      "OrderImpact": {
+        "additionalProperties": false,
+        "properties": {
+          "order_no": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Order No",
+            "type": "string"
+          },
+          "original_eta": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Eta"
+          },
+          "updated_eta": {
+            "format": "date-time",
+            "title": "Updated Eta",
+            "type": "string"
+          },
+          "latest_arrival": {
+            "format": "date-time",
+            "title": "Latest Arrival",
+            "type": "string"
+          },
+          "delay_minutes": {
+            "title": "Delay Minutes",
+            "type": "integer"
+          },
+          "risk_type": {
+            "enum": [
+              "NONE",
+              "SOFT_WINDOW_LATE",
+              "HARD_CONSTRAINT_VIOLATION"
+            ],
+            "title": "Risk Type",
+            "type": "string"
+          },
+          "evidence_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidence Refs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "order_no",
+          "original_eta",
+          "updated_eta",
+          "latest_arrival",
+          "delay_minutes",
+          "risk_type",
+          "evidence_refs"
+        ],
+        "title": "OrderImpact",
+        "type": "object"
+      },
+      "OrderOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "order_no": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Order No",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          },
+          "assigned_vehicle_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Assigned Vehicle Id",
+            "type": "string"
+          },
+          "cargo_status": {
+            "enum": [
+              "NOT_LOADED",
+              "ON_VEHICLE",
+              "DELIVERED"
+            ],
+            "title": "Cargo Status",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "IN_TRANSIT",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "delivery_node_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Delivery Node Id",
+            "type": "string"
+          },
+          "earliest_arrival": {
+            "format": "date-time",
+            "title": "Earliest Arrival",
+            "type": "string"
+          },
+          "latest_arrival": {
+            "format": "date-time",
+            "title": "Latest Arrival",
+            "type": "string"
+          },
+          "window_type": {
+            "enum": [
+              "HARD",
+              "SOFT"
+            ],
+            "title": "Window Type",
+            "type": "string"
+          },
+          "service_minutes": {
+            "maximum": 1440,
+            "minimum": 0,
+            "title": "Service Minutes",
+            "type": "integer"
+          },
+          "weight_kg": {
+            "minimum": 0,
+            "title": "Weight Kg",
+            "type": "number"
+          },
+          "volume_m3": {
+            "minimum": 0,
+            "title": "Volume M3",
+            "type": "number"
+          },
+          "priority": {
+            "enum": [
+              "HIGH",
+              "NORMAL",
+              "LOW"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Facts",
+            "type": "object"
+          }
+        },
+        "required": [
+          "order_no",
+          "version",
+          "assigned_vehicle_id",
+          "cargo_status",
+          "status",
+          "delivery_node_id",
+          "earliest_arrival",
+          "latest_arrival",
+          "window_type",
+          "service_minutes",
+          "weight_kg",
+          "volume_m3",
+          "priority",
+          "facts"
+        ],
+        "title": "OrderOutput",
+        "type": "object"
+      },
+      "PlanGenerationInput": {
+        "properties": {
+          "incident_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Incident Id"
+          },
+          "expected_incident_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Incident Version"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Snapshot Id"
+          },
+          "analysis_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Analysis Id"
+          },
+          "strategy_profile": {
+            "type": "string",
+            "const": "MIN_CHANGE_V1",
+            "title": "Strategy Profile",
+            "default": "MIN_CHANGE_V1"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "incident_id",
+          "expected_incident_version",
+          "snapshot_id",
+          "analysis_id"
+        ],
+        "title": "PlanGenerationInput"
+      },
+      "PlanOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "plan_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Plan Id",
+            "type": "string"
+          },
+          "plan_group_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Plan Group Id",
+            "type": "string"
+          },
+          "plan_version": {
+            "title": "Plan Version",
+            "type": "integer"
+          },
+          "incident_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Incident Id",
+            "type": "string"
+          },
+          "incident_version": {
+            "title": "Incident Version",
+            "type": "integer"
+          },
+          "snapshot_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Snapshot Id",
+            "type": "string"
+          },
+          "analysis_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Analysis Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING_APPROVAL",
+              "APPROVED_PENDING_ACK",
+              "ACTIVE",
+              "STALE",
+              "REJECTED",
+              "SUPERSEDED"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/Metrics"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/Change"
+            },
+            "title": "Changes",
+            "type": "array"
+          },
+          "constraints": {
+            "$ref": "#/components/schemas/Constraints"
+          },
+          "dependencies": {
+            "items": {
+              "$ref": "#/components/schemas/Dependency"
+            },
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "required_driver_ids": {
+            "items": {
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "type": "string"
+            },
+            "title": "Required Driver Ids",
+            "type": "array"
+          },
+          "target_routes": {
+            "items": {
+              "$ref": "#/components/schemas/RouteStopInput"
+            },
+            "title": "Target Routes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "plan_id",
+          "plan_group_id",
+          "plan_version",
+          "incident_id",
+          "incident_version",
+          "snapshot_id",
+          "analysis_id",
+          "status",
+          "expires_at",
+          "metrics",
+          "changes",
+          "constraints",
+          "dependencies",
+          "required_driver_ids",
+          "target_routes"
+        ],
+        "title": "PlanOutput",
+        "type": "object"
+      },
+      "QueuedOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "job_type": {
+            "enum": [
+              "IMPACT_ANALYSIS",
+              "PLAN_GENERATION"
+            ],
+            "title": "Job Type",
+            "type": "string"
+          },
+          "job_status": {
+            "const": "QUEUED",
+            "title": "Job Status",
+            "type": "string"
+          },
+          "incident_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Incident Id",
+            "type": "string"
+          },
+          "poll_after_seconds": {
+            "const": 2,
+            "title": "Poll After Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "job_id",
+          "job_type",
+          "job_status",
+          "incident_id",
+          "poll_after_seconds"
+        ],
+        "title": "QueuedOutput",
+        "type": "object"
+      },
+      "RouteStopInput": {
+        "additionalProperties": false,
+        "properties": {
+          "stop_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Stop Id",
+            "type": "string"
+          },
+          "vehicle_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Vehicle Id",
+            "type": "string"
+          },
+          "order_no": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Order No",
+            "type": "string"
+          },
+          "sequence_no": {
+            "minimum": 1,
+            "title": "Sequence No",
+            "type": "integer"
+          },
+          "node_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Node Id",
+            "type": "string"
+          },
+          "stop_type": {
+            "const": "DELIVERY",
+            "title": "Stop Type",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "ARRIVED",
+              "COMPLETED",
+              "CANCELLED"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stop_id",
+          "vehicle_id",
+          "order_no",
+          "sequence_no",
+          "node_id",
+          "stop_type",
+          "status"
+        ],
+        "title": "RouteStopInput",
+        "type": "object"
+      },
+      "SearchScope": {
+        "additionalProperties": false,
+        "properties": {
+          "vehicle_ids": {
+            "items": {
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "type": "string"
+            },
+            "title": "Vehicle Ids",
+            "type": "array"
+          },
+          "order_nos": {
+            "items": {
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "type": "string"
+            },
+            "title": "Order Nos",
+            "type": "array"
+          },
+          "budget_ms": {
+            "title": "Budget Ms",
+            "type": "integer"
+          },
+          "method": {
+            "const": "BOUNDED_SAME_VEHICLE_RESEQUENCE",
+            "title": "Method",
+            "type": "string"
+          },
+          "max_permutations": {
+            "title": "Max Permutations",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "vehicle_ids",
+          "order_nos",
+          "budget_ms",
+          "method",
+          "max_permutations"
+        ],
+        "title": "SearchScope",
+        "type": "object"
+      },
+      "ToolStatusOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "object_type": {
+            "enum": [
+              "INCIDENT",
+              "ANALYSIS",
+              "PLAN",
+              "JOB",
+              "OPERATION",
+              "REQUEST"
+            ],
+            "title": "Object Type",
+            "type": "string"
+          },
+          "object_id": {
+            "title": "Object Id",
+            "type": "string"
+          },
+          "job_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "QUEUED",
+                  "RUNNING",
+                  "SUCCEEDED",
+                  "FAILED",
+                  "UNKNOWN"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Status"
+          },
+          "result_kind": {
+            "enum": [
+              "INCIDENT",
+              "RECOVERY_PLAN",
+              "IMPACT_ANALYSIS",
+              "PLAN_GENERATION",
+              "OPERATION"
+            ],
+            "title": "Result Kind",
+            "type": "string"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IncidentOutput"
+              },
+              {
+                "$ref": "#/components/schemas/PlanOutput"
+              },
+              {
+                "$ref": "#/components/schemas/AnalysisOutput"
+              },
+              {
+                "$ref": "#/components/schemas/GenerationOutput"
+              },
+              {
+                "$ref": "#/components/schemas/OperationOutput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "object_type",
+          "object_id",
+          "job_status",
+          "result_kind",
+          "result",
+          "error"
+        ],
+        "title": "ToolStatusOutput",
+        "type": "object"
+      },
+      "VehicleOutput": {
+        "additionalProperties": false,
+        "properties": {
+          "vehicle_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Vehicle Id",
+            "type": "string"
+          },
+          "vehicle_no": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Vehicle No",
+            "type": "string"
+          },
+          "version": {
+            "minimum": 1,
+            "title": "Version",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "AVAILABLE",
+              "ON_TASK",
+              "UNAVAILABLE"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "location_node_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Location Node Id",
+            "type": "string"
+          },
+          "location_time": {
+            "format": "date-time",
+            "title": "Location Time",
+            "type": "string"
+          },
+          "capacity_kg": {
+            "exclusiveMinimum": 0,
+            "title": "Capacity Kg",
+            "type": "number"
+          },
+          "capacity_m3": {
+            "exclusiveMinimum": 0,
+            "title": "Capacity M3",
+            "type": "number"
+          },
+          "route_revision": {
+            "minimum": 1,
+            "title": "Route Revision",
+            "type": "integer"
+          },
+          "driver_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Id"
+          },
+          "facts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Facts",
+            "type": "object"
+          }
+        },
+        "required": [
+          "vehicle_id",
+          "vehicle_no",
+          "version",
+          "status",
+          "location_node_id",
+          "location_time",
+          "capacity_kg",
+          "capacity_m3",
+          "route_revision",
+          "driver_id",
+          "facts"
+        ],
+        "title": "VehicleOutput",
+        "type": "object"
+      },
+      "Violation": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "entity_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Entity Ids",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "entity_ids",
+          "message"
+        ],
+        "title": "Violation",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "ToolServiceKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Protected platform service key; independent of browser login."
+      },
+      "TaskContext": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Task-Token",
+        "description": "Signed 300-second user/task/scope/root context injected by a trusted caller."
+      }
+    }
+  }
+}

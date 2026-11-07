@@ -1,0 +1,63 @@
+export const labels: Record<string, string> = {
+  ROAD_DELAY: "道路延误",
+  RECEIVING_WINDOW_CHANGE: "收货时间变更",
+  VEHICLE_BREAKDOWN: "车辆故障",
+  READY_FOR_ANALYSIS: "待影响分析",
+  NEEDS_VERIFICATION: "待核实",
+  ANALYZING: "正在分析影响",
+  AWAITING_APPROVAL: "待调度审批",
+  AWAITING_ACK: "等待司机接收",
+  EXECUTING: "新计划执行中",
+  RESOLVED: "异常已解决",
+  NEEDS_INFO: "待补充信息",
+  WAITING_APPROVAL: "待调度审批",
+  PENDING_APPROVAL: "待审批",
+  APPROVED_PENDING_ACK: "已批准 · 待司机接收",
+  ACTIVE: "已生效",
+  STALE: "已失效",
+  REJECTED: "已拒绝",
+  SUPERSEDED: "已被替代",
+  MANUAL_REVIEW: "人工处理中",
+  WAITING_ACK: "等待司机",
+  PROCESSING: "处理中",
+  DONE: "已结束",
+  ON_TASK: "配送中",
+  AVAILABLE: "可用",
+  UNAVAILABLE: "不可用",
+  PENDING: "待配送",
+  ARRIVED: "已到达",
+  COMPLETED: "已完成",
+  CANCELLED: "已取消",
+  IN_TRANSIT: "运输中",
+  QUEUED: "已受理 · 排队中",
+  RUNNING: "后台处理中",
+  SUCCEEDED: "任务已完成",
+  FAILED: "任务失败",
+  UNKNOWN: "待核实",
+  ANALYZE_IMPACT: "执行影响分析",
+  GENERATE_PLANS: "生成恢复候选",
+  ASK_USER: "补充关键信息",
+  VERIFY_WINDOW: "核实收货时间窗",
+  WAIT_DISPATCHER: "等待调度员",
+  WAIT_DRIVER: "等待司机回执",
+  REFRESH_CONTEXT: "刷新配送快照",
+  POLL: "查询后台任务",
+  NONE: "无需额外操作",
+  RETRY_SAME_KEY: "按原操作重试",
+  LOGIN: "重新登录",
+  RESEQUENCE: "停靠顺序调整",
+  REASSIGN: "车辆改派",
+};
+export const label = (value: string | null | undefined) =>
+  value ? labels[value] || value : "待确认";
+export const time = (value: string | null | undefined) =>
+  value
+    ? new Intl.DateTimeFormat("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "Asia/Shanghai",
+      }).format(new Date(value))
+    : "—";
+export const number = (value: number | null | undefined) =>
+  value == null ? "—" : String(value);
