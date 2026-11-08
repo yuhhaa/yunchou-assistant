@@ -197,6 +197,7 @@ class Dependency(StrictModel):
 
 
 class PlanOutput(StrictModel):
+    approval_mode: Literal["AUTOMATIC_RULE", "MANUAL"] | None = None
     plan_id: Identifier
     plan_group_id: Identifier
     plan_version: int

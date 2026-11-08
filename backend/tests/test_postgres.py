@@ -161,7 +161,8 @@ def test_postgres_outbox_concurrent_dispatch_is_once(flow):
     assert published == [data["job_id"]]
 
 
-def test_actual_redis_celery_three_turn_pipeline(flow):
+@pytest.mark.parametrize("auto_approval_enabled", [False, True])
+def test_actual_redis_celery_three_turn_pipeline(flow, auto_approval_enabled):
     pg_only(flow)
     redis_url = os.environ.get("TEST_REDIS_URL")
     if not redis_url:
@@ -170,6 +171,7 @@ def test_actual_redis_celery_three_turn_pipeline(flow):
 
     from app.maintenance import maintenance_once
 
+    flow.app.state.settings.auto_approval_enabled = auto_approval_enabled
     bound = flow.factory.kw["bind"]
     schema = bound.get_execution_options()["schema_translate_map"][None]
     database_url = bound.url.update_query_dict(
@@ -183,6 +185,7 @@ def test_actual_redis_celery_three_turn_pipeline(flow):
         "TASK_TOKEN_SIGNING_KEY": "t" * 40,
         "TOOL_SERVICE_KEY": "service-test",
         "AGENT_MODE": "local",
+        "AUTO_APPROVAL_ENABLED": str(auto_approval_enabled).lower(),
     }
     suffix = uuid4().hex
     queues = {kind: f"test-{kind}-{suffix}" for kind in ("compute", "chat")}
@@ -248,9 +251,23 @@ def test_actual_redis_celery_three_turn_pipeline(flow):
         third = flow.post(
             "/chat", {"message": "查看结果", "conversation_id": first["conversation_id"]}
         ).json()["data"]
-        assert wait_job(third["job_id"])["business_state"] == "WAITING_APPROVAL"
+        expected_state = "WAITING_ACK" if auto_approval_enabled else "WAITING_APPROVAL"
+        assert wait_job(third["job_id"])["business_state"] == expected_state
         with flow.factory() as session:
             assert len(session.scalars(select(m.Incident)).all()) == 1
+            assert session.get(m.Vehicle, "V01").route_revision == 1
+        if auto_approval_enabled:
+            approved = next(
+                p for p in generated["plans"] if p["status"] == "APPROVED_PENDING_ACK"
+            )
+            assert approved["approval_mode"] == "AUTOMATIC_RULE"
+            response = flow.post(
+                f"/plans/{approved['plan_id']}/receipts",
+                {"expected_plan_version": approved["plan_version"], "decision": "ACCEPTED"},
+            )
+            assert response.status_code == 200, response.text
+            assert response.json()["data"]["status"] == "ACTIVE"
+            assert flow.route_revision() == 2
     finally:
         for process in processes:
             process.terminate()

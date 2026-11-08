@@ -303,6 +303,7 @@ function candidates(inc: Incident, a: Analysis): Schema["GenerationOutput"] {
       }));
     return {
       plan_id: `PLAN_DEMO_${++serial}`,
+      approval_mode: null,
       plan_group_id: "GROUP_DEMO",
       plan_version: 1,
       incident_id: inc.incident_id,
@@ -613,6 +614,7 @@ export async function mockRequest<T>(path: string, body?: unknown): Promise<T> {
       )
         throw Error("同一事件已有批准或生效的方案。");
       p.status = "APPROVED_PENDING_ACK";
+      p.approval_mode = "MANUAL";
       planIncident.status = "WAITING_ACK";
       planIncident.next_action = "WAIT_DRIVER";
       p.plan_version++;

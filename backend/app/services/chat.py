@@ -313,6 +313,17 @@ def reconcile(raw, actor, session_factory, *, existing_session=None):
         lock_fleet(session, actor.tenant_id)
         incident = incident_access(session, actor, raw.incident_id) if raw.incident_id else None
         jobs = [job_data(session, actor, jid, tool=True) for jid in raw.job_ids]
+        # Explicit UI actions may submit a newer computation outside the original
+        # CHAT turn. Reconcile against the current authorized job, not just old IDs.
+        if incident and incident.current_calculation_job_id not in raw.job_ids:
+            current = (
+                session.get(m.Job, incident.current_calculation_job_id)
+                if incident.current_calculation_job_id
+                else None
+            )
+            if current and current.user_id == actor.user_id and current.job_type != "CHAT":
+                jobs.append(job_data(session, actor, current.id, tool=True))
+                output.job_ids.append(current.id)
         plans = [status(session, actor, "PLAN", pid)["result"] for pid in raw.plan_ids]
         for item in jobs:
             job = session.get(m.Job, item["job_id"])
@@ -329,6 +340,13 @@ def reconcile(raw, actor, session_factory, *, existing_session=None):
                 fail("NOT_FOUND", status=404)
             incident = incident_access(session, actor, ids.pop())
             output.incident_id = incident.id
+        # Keep historical references authorized, but only the workflow's current
+        # calculation may determine whether to poll, retry or generate candidates.
+        state_jobs = (
+            [j for j in jobs if j["job_id"] == incident.current_calculation_job_id]
+            if incident and incident.current_calculation_job_id
+            else jobs
+        )
         # Evidence references are reconstructed, never taken from model text.
         output.evidence_refs = [f"{incident.id}:v{incident.version}"] if incident else []
         output.evidence_refs += [f"{p['plan_id']}:v{p['plan_version']}" for p in plans]
@@ -366,12 +384,15 @@ def reconcile(raw, actor, session_factory, *, existing_session=None):
                 p["status"] == "PENDING_APPROVAL" for p in plans
             ):
                 state, action = "WAITING_APPROVAL", "WAIT_DISPATCHER"
-            elif any(j["job_status"] in {"QUEUED", "RUNNING"} for j in jobs):
+            elif any(j["job_status"] in {"QUEUED", "RUNNING"} for j in state_jobs):
                 state, action = "PROCESSING", "POLL"
-            elif any(j["job_status"] == "FAILED" for j in jobs):
+            elif any(j["job_status"] == "FAILED" for j in state_jobs):
                 state, action = "MANUAL_REVIEW", "MANUAL_REVIEW"
             elif any(
-                j["job_type"] == "IMPACT_ANALYSIS" and j["job_status"] == "SUCCEEDED" for j in jobs
+                j["job_type"] == "IMPACT_ANALYSIS"
+                and j["job_status"] == "SUCCEEDED"
+                and (j.get("result") or {}).get("analysis_status") == "VALID"
+                for j in state_jobs
             ):
                 action = "GENERATE_PLANS"
         output.business_state, output.next_action = state, action
@@ -540,6 +561,12 @@ def run_chat(job_id, *, session_factory, settings, worker_id=None, platform=None
     gateway = ToolGateway(actor, turn_id, session_factory, settings, owner, fence)
     failure = None
     try:
+        if settings.agent_mode == "deepseek" and run_input.business_context.get("incident_id"):
+            # Resolve progress from authorized DB facts on every turn. User/assistant
+            # text history intentionally contains no raw tool transcripts or IDs.
+            # Without these references a continuation cannot find a completed analysis.
+            recent = gateway.existing_jobs(run_input.business_context["incident_id"])
+            run_input.business_context["recent_jobs"] = recent[-6:]
         if platform is None:
             if settings.agent_mode == "local":
                 platform = LocalSimulator()

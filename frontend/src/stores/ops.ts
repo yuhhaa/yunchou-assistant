@@ -6,6 +6,7 @@ import {
   abortableDelay,
   chatBusinessLabel,
   continuationLabel,
+  continuationMessage,
 } from "../lib/chat-state";
 import { mockRequest, configureDemoScenario } from "../mock/transport";
 import { isMapRoutingResult } from "../lib/map-result";
@@ -866,6 +867,23 @@ export const useOps = defineStore("ops", () => {
     }
     notice.value = "已恢复服务端会话历史；旧消息不代表当前业务状态。";
     persist();
+    void refreshChatBusinessState().catch(() => {
+      if (conversationId.value === meta.conversation_id)
+        notice.value = "历史消息已恢复，当前业务状态读取失败，请刷新后再继续。";
+    });
+  }
+  async function refreshChatBusinessState() {
+    const scope = conversationId.value;
+    const owner = user.value?.user_id;
+    const last = [...messages.value].reverse().find((m) => m.role === "assistant" && m.jobId);
+    if (!last?.jobId) return;
+    const latest = await call<Job>("/jobs/" + id(last.jobId));
+    if (scope !== conversationId.value || owner !== user.value?.user_id) return;
+    if (latest.result_kind === "CHAT" && latest.job_status === "SUCCEEDED" && isRunResult(latest.result)) {
+      chatResult.value = latest.result;
+      chatJob.value = latest;
+      if (latest.result.incident_id) await openIncident(latest.result.incident_id, true);
+    }
   }
   async function refreshMapRouting() {
     await guard(async () => {
@@ -892,7 +910,25 @@ export const useOps = defineStore("ops", () => {
     if (chatResult.value?.next_action === "RETRY_SAME_KEY") return recover();
     if (chatResult.value?.next_action === "REFRESH_CONTEXT")
       return guard(refresh);
-    await chat("继续");
+    if (chatResult.value?.next_action === "ANALYZE_IMPACT") {
+      await analyze();
+      if (!error.value) await guard(refreshChatBusinessState);
+      return;
+    }
+    if (chatResult.value?.next_action === "GENERATE_PLANS") {
+      // A button already expresses an explicit authorized business action.
+      // Use current versions and the existing deterministic API, not a vague LLM turn.
+      await guard(refresh);
+      if (error.value) return;
+      if (!analysis.value) {
+        await analyze();
+        if (error.value) return;
+      }
+      await generate();
+      if (!error.value) await guard(refreshChatBusinessState);
+      return;
+    }
+    await chat(continuationMessage(chatResult.value));
   }
   watch(assistantOpen, (open) => {
     if (!open && activeScope === "chat") cancelPolling();

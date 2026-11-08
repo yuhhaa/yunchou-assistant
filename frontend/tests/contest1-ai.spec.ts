@@ -1,7 +1,7 @@
 import { test, expect } from "./test";
 import type { Page } from "@playwright/test";
 import { mockRequest, resetFixtures } from "../src/mock/transport";
-import { chatBusinessLabel, continuationLabel } from "../src/lib/chat-state";
+import { chatBusinessLabel, continuationLabel, continuationMessage } from "../src/lib/chat-state";
 import type { Schema } from "../src/api/types";
 import { mkdirSync } from "node:fs";
 mkdirSync("screenshots/contest1", { recursive: true });
@@ -282,10 +282,10 @@ test("赛题一同一 conversation_id 多轮补问、子任务去重、主动继
     "等待调度员批准",
   );
   expect(state.posts[2].conversation_id).toBe("CONV_1");
-  expect(state.posts[2].message).toBe("继续");
+  expect(state.posts[2].message).toContain("不要新建异常");
   await page.locator(".ai-runtime-status summary").click();
   await expect(page.locator(".ai-runtime-status")).toContainText("真实模型");
-  await expect(page.locator(".ai-runtime-status")).toContainText("未验收");
+  await expect(page.locator(".ai-runtime-status")).toContainText("模型配置状态不等于调用成功");
   await page.screenshot({
     path: "screenshots/contest1/driver-ai-desktop.png",
     fullPage: true,
@@ -428,4 +428,6 @@ test("业务状态文案区分待确认、生效与完成", () => {
     "生成",
   );
   expect(continuationLabel(r("PROCESSING", "POLL"), true)).toBe("");
+  expect(continuationMessage(r("NEEDS_INFO", "GENERATE_PLANS"))).toContain("generate_recovery_plans");
+  expect(continuationMessage(r("NEEDS_INFO", "ANALYZE_IMPACT"))).toContain("analyze_impact");
 });

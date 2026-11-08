@@ -4,6 +4,8 @@ from copy import deepcopy
 from datetime import datetime
 from itertools import pairwise
 
+from sqlalchemy import select
+
 from app import models as m
 from app.config import Settings
 from app.errors import DomainError
@@ -311,6 +313,15 @@ def run_job(job_id, *, session_factory, settings=None, worker_id=None):
             if incident.current_calculation_job_id == job.id:
                 incident.status = "AWAITING_APPROVAL" if output else "MANUAL_REVIEW"
                 incident.current_plan_group_id = group_id if output else None
+                if output and settings.auto_approval_enabled:
+                    from app.services.auto_approval import review_candidates
+
+                    session.flush()
+                    published = session.scalars(
+                        select(m.Plan).where(m.Plan.plan_group_id == group_id)
+                    ).all()
+                    review_candidates(session, incident, published, settings, job.operation_id)
+                    result["plans"] = [plan_data(p) for p in published]
         job.status, job.result, job.error = "SUCCEEDED", result, None
         job.completed_at, job.lease_owner, job.lease_expires_at = m.utcnow(), None, None
         session.add(

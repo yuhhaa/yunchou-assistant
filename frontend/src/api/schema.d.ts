@@ -1338,6 +1338,11 @@ export interface components {
         };
         /** PlanOutput */
         PlanOutput: {
+            /**
+             * Approval Mode
+             * @default null
+             */
+            approval_mode: ("AUTOMATIC_RULE" | "MANUAL") | null;
             /** Plan Id */
             plan_id: string;
             /** Plan Group Id */

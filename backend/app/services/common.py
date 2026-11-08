@@ -312,6 +312,11 @@ def plan_data(plan):
         "constraints": plan.constraints,
         "dependencies": plan.dependencies,
         "required_driver_ids": plan.required_driver_ids,
+        "approval_mode": "AUTOMATIC_RULE"
+        if (plan.approved_by or "").startswith("SYSTEM_AUTO_")
+        else "MANUAL"
+        if plan.approved_by
+        else None,
         "target_routes": plan.target_routes,
     }
 

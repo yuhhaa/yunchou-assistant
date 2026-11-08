@@ -708,3 +708,13 @@ WindowVerificationInput只由调度员核实；窗口必须含时区且开始不
 司机：本人车辆、路线、事件、计划；实际站点回执只由所属司机执行。调度：车队查询、点位维护、地理编码、矩阵刷新、核实窗口、批准和拒绝。聊天、JOB、会话历史与请求操作保持创建者隔离，调度通过事件workspace查看业务成果。两类用户都不能伪造身份字段或越过人工确认。
 
 StatusOutput按object_type为INCIDENT、ANALYSIS、PLAN、JOB、OPERATION、REQUEST解释；REQUEST返回对应OPERATION，再沿引用读取。完整JOB result按result_kind区分IMPACT_ANALYSIS、PLAN_GENERATION、CHAT和MAP_ROUTING；失败时查看JOB error，不能把失败查询的HTTP200当成任务成功。地图刷新没有事件根，因此兼容模型T05不能读取它。
+
+## 2026-11-08 接口与流程补充
+
+PlanOutput 新增可选 approval_mode：未审批为 null，人工审批为 MANUAL，后端规则审核为 AUTOMATIC_RULE。该字段由后端输出，前端不得提交或推断审核来源。自动审核通过后的状态仍为 APPROVED_PENDING_ACK，事件为 AWAITING_ACK；全部必要司机接收并通过复核后才为 ACTIVE。
+
+AUTO_APPROVAL_ENABLED 默认 false，阈值与 API、worker 一致配置。首版 AUTO_RESEQUENCE_V1 仅用于明确的模拟数据及模拟路网，同车调序 1～2 单、道路延误不超过 30 分钟、约束通过且不增加距离；不合格保留人工审批。真实业务、真实时钟或真实路网输入强制转人工，不能凭模拟证据自动审核。完整策略和拒绝原因见[自动审核接入说明](自动审核接入说明.md)。
+
+AI 继续处理时，business_context.recent_jobs 提供当前用户有权查看的业务任务结果。复用有效分析的 analysis_id、snapshot_id 和事件版本；过期才重新分析。前端“分析/生成候选”按钮可直接调用对应业务接口，再查询原 CHAT JOB 刷新经数据库核验的业务状态。历史失败或运行中任务不能覆盖事件当前计算任务的状态。
+
+本补充没有新增 GPS 定位、拥堵点位或道路避让接口；现有最近业务节点仍不等于实时位置。真实模型服务的配置就绪也不等于本轮调用成功。

@@ -255,9 +255,9 @@ def receipts(session, actor, plan_id, body, settings, operation_id):
         if plan.status != "ACTIVE":
             check_plan(session, plan, reservation_required=True)
         return _receipt_data(session, plan), 200
-    incident, snapshot = check_plan(session, plan, reservation_required=True)
     if plan.status != "APPROVED_PENDING_ACK":
         fail("STALE_PLAN")
+    incident, snapshot = check_plan(session, plan, reservation_required=True)
     session.add(
         m.DriverAcknowledgement(
             tenant_id=actor.tenant_id, plan_id=plan.id, driver_id=actor.user_id, accepted=accepted
