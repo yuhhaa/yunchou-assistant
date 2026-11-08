@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     tool_read_seconds: int = 10
     connection_timeout_seconds: int = 3
     maintenance_interval_seconds: int = 2
+    auto_approval_enabled: bool = False
+    auto_approval_max_changed_orders: int = Field(default=2, ge=1, le=20)
+    auto_approval_max_delay_minutes: int = Field(default=30, ge=0, le=1440)
 
 
 def get_settings() -> Settings:

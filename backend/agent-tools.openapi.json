@@ -2329,6 +2329,22 @@
       "PlanOutput": {
         "additionalProperties": false,
         "properties": {
+          "approval_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "AUTOMATIC_RULE",
+                  "MANUAL"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Approval Mode"
+          },
           "plan_id": {
             "pattern": "^[A-Za-z0-9_-]{1,64}$",
             "title": "Plan Id",

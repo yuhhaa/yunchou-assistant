@@ -206,12 +206,14 @@ async function send() {
               ? "演示数据与规则均在独立 Mock 层，不代表真实 AI 理解能力。"
               : ops.runtime.agentMode === "local"
                 ? "后端报告 local 模式，属于本地规则模拟。"
+                : ops.runtime.agentMode === "deepseek"
+                  ? "后端已配置 DeepSeek 工具调用；本轮是否成功以任务结果为准，配送数据仍可能为模拟数据。"
                 : ops.runtime.agentMode === "direct_ai"
                   ? "后端报告 direct_ai 模式；是否使用真实模型仍需部署方提供调用验收证据。"
                   : "Direct AI 接线代码已交付，当前部署及真实模型调用尚未核实。"
           }}
         </p>
-        <small>真实模型联调：未验收 · 云端端到端：未验收</small>
+        <small>模型配置状态不等于调用成功；请查看本轮任务结果。云端端到端仍需部署验收。</small>
       </details>
       <article
         v-for="(m, i) in ops.messages"

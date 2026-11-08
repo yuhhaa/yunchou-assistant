@@ -1474,7 +1474,7 @@ onUnmounted(() => {
             )"
             :key="plan.plan_id"
           >
-            <span class="badge warning">已获调度批准 · 等待您的确认</span>
+            <span class="badge warning">{{ plan.approval_mode === 'AUTOMATIC_RULE' ? '规则自动审核通过' : '已获调度批准' }} · 等待您的确认</span>
             <div
               v-for="c in plan.changes.filter(
                 (c) =>

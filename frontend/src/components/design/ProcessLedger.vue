@@ -76,11 +76,11 @@ const steps = computed(() => {
           : "等待候选计算结果。",
     },
     {
-      name: "调度审批",
+      name: "方案审核",
       done: !!approved.value,
       detail: approved.value
-        ? `${approved.value.plan_id} · V${approved.value.plan_version} · ${label(approved.value.status)}`
-        : "需要调度员明确确认，AI回复不能代替审批。",
+        ? `${approved.value.approval_mode === "AUTOMATIC_RULE" ? "规则自动审核" : "调度员审批"} · ${approved.value.plan_id} · V${approved.value.plan_version} · ${label(approved.value.status)}`
+        : "符合服务端规则的方案可自动审核，其余等待调度员审批。",
     },
     {
       name: "司机确认",
@@ -89,7 +89,7 @@ const steps = computed(() => {
         ? "后端已确认新计划生效。"
         : approved.value
           ? "等待必要司机回执及服务端复核；不推测已接收人数。"
-          : "调度批准后进入司机确认阶段。",
+          : "方案审核通过后进入司机确认阶段。",
     },
     {
       name: "计划生效",
