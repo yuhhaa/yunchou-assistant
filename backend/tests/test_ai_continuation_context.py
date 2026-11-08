@@ -1,3 +1,5 @@
+import pytest
+
 from app.platform import result
 from app.services.chat import run_chat
 
@@ -69,7 +71,9 @@ def test_premature_receipt_does_not_expire_unapproved_candidate(flow):
 
 def test_chat_state_follows_new_computation_and_rejects_expired_analysis(flow):
     from datetime import timedelta
+
     from sqlalchemy import select
+
     from app import models as m
     from app.services.chat import reconcile
     from app.services.common import Actor
@@ -97,3 +101,32 @@ def test_chat_state_follows_new_computation_and_rejects_expired_analysis(flow):
             seconds=1
         )
     assert reconcile(original, actor, flow.factory).next_action == "ANALYZE_IMPACT"
+
+
+@pytest.mark.parametrize("old_status", ["FAILED", "QUEUED"])
+def test_current_analysis_supersedes_old_job_state(flow, old_status):
+    from sqlalchemy import select
+
+    from app import models as m
+    from app.services.chat import reconcile
+    from app.services.common import Actor
+
+    context, incident = flow.context(), flow.incident()
+    body = {
+        "incident_id": incident["incident_id"],
+        "expected_incident_version": incident["incident_version"],
+        "snapshot_id": context["snapshot_id"],
+    }
+    old, current = [
+        flow.post("/impact-analyses", body).json()["data"]["job_id"] for _ in range(2)
+    ]
+    with flow.factory() as session, session.begin():
+        session.get(m.Job, old).status = old_status
+        user = session.scalar(select(m.User).where(m.User.username == "driver01"))
+        actor = Actor(user.id, user.tenant_id, user.role, user.vehicle_id)
+    flow.app.state.business.run_job(current)
+    checked = reconcile(
+        result(incident_id=incident["incident_id"], job_ids=[old]), actor, flow.factory
+    )
+    assert checked.next_action == "GENERATE_PLANS"
+    assert current in checked.job_ids

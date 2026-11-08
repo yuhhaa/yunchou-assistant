@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import select
 
 from app import models as m
@@ -15,6 +16,25 @@ def test_disabled_keeps_manual_approval(flow):
     assert plan["status"] == "PENDING_APPROVAL"
     assert plan["approval_mode"] is None
     assert not decisions(flow)
+
+
+@pytest.mark.parametrize("field", ["source", "clock_mode", "routing_source"])
+def test_business_data_requires_manual_review_until_real_evidence_policy_exists(flow, field):
+    plan = flow.generate()
+    from app.services.auto_approval import review_candidates
+
+    settings = flow.app.state.settings.model_copy(update={"auto_approval_enabled": True})
+    with flow.factory() as session, session.begin():
+        stored = session.get(m.Plan, plan["plan_id"])
+        incident = session.get(m.Incident, plan["incident_id"])
+        snapshot = session.get(m.Snapshot, plan["snapshot_id"])
+        snapshot.payload = {**snapshot.payload, field: "BUSINESS"}
+        review_candidates(session, incident, [stored], settings)
+        assert stored.status == "PENDING_APPROVAL"
+        assert incident.status == "AWAITING_APPROVAL"
+        assert not session.scalars(select(m.Reservation)).all()
+    decision = decisions(flow)[0].detail
+    assert "REAL_DATA_REQUIRES_MANUAL" in decision["rejections"][plan["plan_id"]]
 
 
 def test_auto_approval_waits_for_driver_and_is_idempotent(flow):

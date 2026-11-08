@@ -32,6 +32,7 @@ npm run dev -- --port 5177 --strictPort
 - [后端说明](backend/README.md) · [接口说明](backend/API.md)
 - [完整OpenAPI](backend/openapi.json) · [DeepSeek内部工具契约](docs/deepseek-tool-contract.json)
 - [前端、AI及地图契约](docs/赛题一前端与AI地图对齐文档.md)
+- [可选规则审核与司机确认](docs/自动审核接入说明.md)
 
 JS Key与配套jscode、后端地图Web服务Key、DeepSeek API Key均由部署者自己申请并配置。仓库不包含这些凭据、数据库、依赖目录或构建产物。
 

@@ -1,5 +1,6 @@
 """Opt-in, deterministic approval. No model input controls policy or actor identity."""
 
+from app import models as m
 from app.errors import DomainError
 from app.schemas import ApprovalInput
 from app.services.common import Actor, audit
@@ -56,7 +57,20 @@ def review_candidates(session, incident, plans, settings, operation_id=None):
     if not candidates:
         return
     actor = Actor(PRINCIPAL, incident.tenant_id, "DISPATCHER", None)
-    eligible = [p for p in candidates if not rejection_reasons(p, incident, settings)]
+    rejections = {}
+    for plan in candidates:
+        reasons = rejection_reasons(plan, incident, settings)
+        snapshot = session.get(m.Snapshot, plan.snapshot_id)
+        payload = snapshot.payload if snapshot else {}
+        # V1 has no verified GPS/traffic evidence policy. Fail closed outside
+        # the explicitly simulated dataset, regardless of the enable switch.
+        if any(
+            payload.get(field) != "SIMULATION"
+            for field in ("source", "clock_mode", "routing_source")
+        ):
+            reasons.append("REAL_DATA_REQUIRES_MANUAL")
+        rejections[plan.id] = reasons
+    eligible = [p for p in candidates if not rejections[p.id]]
     detail = {
         "policy": POLICY,
         "decision": "REQUIRES_MANUAL",
@@ -65,7 +79,7 @@ def review_candidates(session, incident, plans, settings, operation_id=None):
             "changed_orders": settings.auto_approval_max_changed_orders,
             "delay_minutes": settings.auto_approval_max_delay_minutes,
         },
-        "rejections": {p.id: rejection_reasons(p, incident, settings) for p in candidates},
+        "rejections": rejections,
     }
     if eligible:
         chosen = min(

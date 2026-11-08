@@ -340,6 +340,13 @@ def reconcile(raw, actor, session_factory, *, existing_session=None):
                 fail("NOT_FOUND", status=404)
             incident = incident_access(session, actor, ids.pop())
             output.incident_id = incident.id
+        # Keep historical references authorized, but only the workflow's current
+        # calculation may determine whether to poll, retry or generate candidates.
+        state_jobs = (
+            [j for j in jobs if j["job_id"] == incident.current_calculation_job_id]
+            if incident and incident.current_calculation_job_id
+            else jobs
+        )
         # Evidence references are reconstructed, never taken from model text.
         output.evidence_refs = [f"{incident.id}:v{incident.version}"] if incident else []
         output.evidence_refs += [f"{p['plan_id']}:v{p['plan_version']}" for p in plans]
@@ -377,15 +384,15 @@ def reconcile(raw, actor, session_factory, *, existing_session=None):
                 p["status"] == "PENDING_APPROVAL" for p in plans
             ):
                 state, action = "WAITING_APPROVAL", "WAIT_DISPATCHER"
-            elif any(j["job_status"] in {"QUEUED", "RUNNING"} for j in jobs):
+            elif any(j["job_status"] in {"QUEUED", "RUNNING"} for j in state_jobs):
                 state, action = "PROCESSING", "POLL"
-            elif any(j["job_status"] == "FAILED" for j in jobs):
+            elif any(j["job_status"] == "FAILED" for j in state_jobs):
                 state, action = "MANUAL_REVIEW", "MANUAL_REVIEW"
             elif any(
                 j["job_type"] == "IMPACT_ANALYSIS"
                 and j["job_status"] == "SUCCEEDED"
                 and (j.get("result") or {}).get("analysis_status") == "VALID"
-                for j in jobs
+                for j in state_jobs
             ):
                 action = "GENERATE_PLANS"
         output.business_state, output.next_action = state, action
