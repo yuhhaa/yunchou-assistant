@@ -708,3 +708,40 @@ test("实际位置离开仓库及已到站重复节点仍可显示模拟剩余�
   route.node_sequence = ["B", "B", "A", "C"];
   expect(adaptWuhanMap(input).layers).toHaveLength(1);
 });
+
+for (const discovery of ["manual", "automatic"] as const) {
+  test(`司机从旧异常发现新待确认调整 ${discovery}`, async ({ page }) => {
+    await api(page, "DRIVER");
+    const base = (await mockRequest<any>("/incidents")).incidents[0];
+    const old = { ...base, status: "EXECUTING" };
+    const incoming = { ...base, incident_id: "INC_NEW_ACK", status: "AWAITING_ACK" };
+    const context = await mockRequest<any>("/delivery-context");
+    const analysisJob = await mockRequest<any>("/impact-analyses", {
+      incident_id: base.incident_id, snapshot_id: context.snapshot_id,
+      expected_incident_version: base.incident_version,
+    });
+    const analysis = (await mockRequest<any>(`/jobs/${analysisJob.job_id}`)).result;
+    const generation = await mockRequest<any>("/recovery-plans", {
+      incident_id: base.incident_id, snapshot_id: analysis.snapshot_id,
+      expected_incident_version: base.incident_version, analysis_id: analysis.analysis_id,
+    });
+    const plan = (await mockRequest<any>(`/jobs/${generation.job_id}`)).result.plans[0];
+    let published = false;
+    await page.route("**/api/v1/incidents**", async (r) => {
+      const path = new URL(r.request().url()).pathname;
+      const data = path.endsWith("/incidents")
+        ? { incidents: published ? [old, incoming] : [old] }
+        : { incident: path.includes("INC_NEW_ACK") ? incoming : old, analyses: [],
+            plans: path.includes("INC_NEW_ACK") ? [{ ...plan, incident_id: incoming.incident_id,
+              status: "APPROVED_PENDING_ACK", approval_mode: "MANUAL" }] : [] };
+      return r.fulfill({ json: envelope(data) });
+    });
+    await page.getByRole("button", { name: "刷新司机异常", exact: true }).click();
+    await expect(page.getByRole("button", { name: "接受调整", exact: false })).toHaveCount(0);
+    published = true;
+    if (discovery === "manual")
+      await page.getByRole("button", { name: "刷新司机异常", exact: true }).click();
+    await expect(page.getByRole("button", { name: "接受调整", exact: false }))
+      .toBeVisible({ timeout: 16000 });
+  });
+}

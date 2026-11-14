@@ -392,14 +392,14 @@ watch(
     filter.value = "ALL";
   },
 );
-// Refresh pending acknowledgements from the service; no local activation inference.
+// Drivers must discover newly approved adjustments even when none is visible yet.
 const refreshTimer = setInterval(() => {
   if (
     document.visibilityState === "visible" &&
     !ops.busy &&
     !showReport.value &&
     !dialog.value &&
-    ops.workspace?.plans.some((p) => p.status === "APPROVED_PENDING_ACK")
+    (ops.isDriver || ops.workspace?.plans.some((p) => p.status === "APPROVED_PENDING_ACK"))
   )
     ops.guard(ops.refresh);
 }, 10000);

@@ -371,7 +371,17 @@ export const useOps = defineStore("ops", () => {
         "";
     if (chosen || isDriver.value) await loadContext(chosen, signal);
     else context.value = null;
-    if (workspace.value)
+    // A driver may still be viewing an older incident when dispatch approves
+    // a newer one. Discover the pending adjustment before preserving selection.
+    const awaitingReceipt = isDriver.value
+      ? list.incidents.find(
+          (i) => i.vehicle_id === chosen &&
+            ["AWAITING_ACK", "WAITING_ACK"].includes(i.status),
+        )
+      : undefined;
+    if (awaitingReceipt)
+      await openIncident(awaitingReceipt.incident_id, false, signal);
+    else if (workspace.value)
       await openIncident(workspace.value.incident.incident_id, false, signal);
     else {
       const current = list.incidents.find((i) => i.vehicle_id === chosen);
