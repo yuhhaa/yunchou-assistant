@@ -12,13 +12,14 @@ REPORT = {
 }
 
 
-def test_local_clarification_accepts_explicit_estimated_lateness(flow):
+@pytest.mark.parametrize("message", ["预计晚20分钟", "预计延时20分钟"])
+def test_local_clarification_accepts_explicit_estimated_lateness(flow, message):
     from app.services.chat import run_chat
 
     first = flow.post("/chat", {"message": "堵车了"}).json()["data"]
     run_chat(first["job_id"], session_factory=flow.factory, settings=flow.app.state.settings)
     second = flow.post(
-        "/chat", {"message": "预计晚20分钟", "conversation_id": first["conversation_id"]}
+        "/chat", {"message": message, "conversation_id": first["conversation_id"]}
     ).json()["data"]
     run_chat(second["job_id"], session_factory=flow.factory, settings=flow.app.state.settings)
     job = flow.get("/jobs/" + second["job_id"]).json()["data"]

@@ -312,7 +312,7 @@ class LocalSimulator:
             return result()
         if not incident_id:
             estimate = re.search(
-                r"(?:延误|推迟|堵车|延迟|预计晚|晚到|晚点)\s*(?:预计)?\s*(\d{1,4})\s*分钟", run_input.input_text
+                r"(?:延误|延时|推迟|堵车|延迟|预计晚|晚到|晚点)\s*(?:预计)?\s*(\d{1,4})\s*分钟", run_input.input_text
             )
             if not estimate:
                 return result()
