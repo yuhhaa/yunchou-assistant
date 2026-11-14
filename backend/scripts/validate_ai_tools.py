@@ -247,7 +247,9 @@ def finish_lifecycle(
     chat("继续。请查询已有分析任务的结果，使用当前有效分析生成恢复候选，不要新建异常或重复分析。")
     compute()
     with factory() as session:
-        plans = session.scalars(select(m.Plan).where(m.Plan.status == "PENDING_APPROVAL")).all()
+        plans = session.scalars(
+            select(m.Plan).where(m.Plan.status.in_(["PENDING_APPROVAL", "APPROVED_PENDING_ACK"]))
+        ).all()
         if not plans:
             report["passed"] = False
             report["failure"] = "Continuation did not generate candidate plans"
@@ -257,12 +259,37 @@ def finish_lifecycle(
     login.raise_for_status()
     dispatcher = {"Authorization": "Bearer " + login.json()["data"]["access_token"]}
     workspace = request("GET", f"/incidents/{incident_id}/workspace", headers=dispatcher)
-    plans = [p for p in workspace["plans"] if p["status"] == "PENDING_APPROVAL"]
-    # Simulate an explicit human choice using a stable metric ordering, not a fixed ID or BAC assumption.
+    approved_plans = [p for p in workspace["plans"] if p["status"] == "APPROVED_PENDING_ACK"]
+    plans = approved_plans or [p for p in workspace["plans"] if p["status"] == "PENDING_APPROVAL"]
+    # Prefer the policy-approved candidate; otherwise simulate explicit human choice.
     plan = min(
         plans,
         key=lambda p: (p["metrics"]["total_delay_minutes"], p["metrics"]["changed_order_count"]),
     )
+    if approved_plans:
+        if plan.get("approval_mode") != "AUTOMATIC_RULE":
+            raise RuntimeError("Unexpected approval source in isolated fixture")
+        approved = plan
+        report["steps"].append({"automatic_approval": approved})
+    else:
+        approved = approve_manually(client, driver, plan, dispatcher, request, report)
+    if approved["status"] != "APPROVED_PENDING_ACK":
+        raise RuntimeError("Approval must wait for driver")
+    with factory() as session:
+        if session.get(m.Vehicle, "V01").route_revision != 1:
+            raise RuntimeError("Route changed before driver acceptance")
+    accepted = request(
+        "POST",
+        f"/plans/{plan['plan_id']}/receipts",
+        {"expected_plan_version": approved["plan_version"], "decision": "ACCEPTED"},
+    )
+    if accepted["status"] != "ACTIVE":
+        raise RuntimeError("Driver acceptance did not activate plan")
+    report["steps"].append({"driver_acceptance": accepted})
+    finish_deliveries(request, settings, chat, factory, incident_id, report)
+
+
+def approve_manually(client, driver, plan, dispatcher, request, report):
     premature = client.post(
         "/api/v1/plans/" + plan["plan_id"] + "/receipts",
         json={"decision": "ACCEPTED", "expected_plan_version": plan["plan_version"]},
@@ -284,14 +311,10 @@ def finish_lifecycle(
     if approved["status"] != "APPROVED_PENDING_ACK":
         raise RuntimeError("Approval must wait for driver")
     report["steps"].append({"approval": approved})
-    accepted = request(
-        "POST",
-        f"/plans/{plan['plan_id']}/receipts",
-        {"expected_plan_version": approved["plan_version"], "decision": "ACCEPTED"},
-    )
-    if accepted["status"] != "ACTIVE":
-        raise RuntimeError("Driver acceptance did not activate plan")
-    report["steps"].append({"driver_acceptance": accepted})
+    return approved
+
+
+def finish_deliveries(request, settings, chat, factory, incident_id, report):
     # Arrival and completion are separate human actions, in the actual active order.
     for _ in range(30):
         context = request("GET", "/delivery-context?order_no=O001")
