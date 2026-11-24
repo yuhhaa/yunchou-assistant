@@ -11,6 +11,7 @@ import type {
   AmapInstance,
   AmapOverlay,
   AmapInfoWindow,
+  LngLat,
 } from "../../services/maps/amapSdk";
 import type {
   MapModel,
@@ -31,6 +32,7 @@ const props = defineProps<{
   changedOrders: string[];
   nextOrder?: string;
   retry: number;
+  picking?: boolean;
 }>();
 const emit = defineEmits<{
   select: [string];
@@ -38,6 +40,7 @@ const emit = defineEmits<{
   ready: [];
   failure: [string];
   retry: [];
+  pick: [LngLat];
 }>();
 const host = ref<HTMLElement>(),
   ready = ref(false),
@@ -161,6 +164,12 @@ async function init() {
     map.addControl(
       new sdk.Scale({ position: "LB", offset: new sdk.Pixel(12, 48) }),
     );
+    if (props.picking) {
+      map.on("click", (event) => {
+        const point = event.lnglat;
+        if (point) emit("pick", [point.getLng(), point.getLat()]);
+      });
+    }
     map.on("complete", () => {
       if (!alive || run !== generation) return;
       clearTimeout(completeTimer);

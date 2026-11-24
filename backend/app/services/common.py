@@ -201,6 +201,7 @@ def dependencies_valid(session, tenant_id, dependencies):
             "INCIDENT": m.Incident,
             "VEHICLE": m.Vehicle,
             "ORDER": m.Order,
+            "NODE": m.Node,
             "ROUTING": m.RoutingGraph,
         }.get(kind)
         if model:
@@ -271,7 +272,7 @@ def calculation_inputs(session, actor, body):
     return incident, snapshot, analysis
 
 
-def incident_data(incident, superseded=None):
+def incident_data(incident, superseded=None, *, include_road=True):
     ready = incident.status in {"READY_FOR_ANALYSIS", "ANALYZING", "AWAITING_APPROVAL"}
     return {
         "incident_id": incident.id,
@@ -286,6 +287,11 @@ def incident_data(incident, superseded=None):
         "reported_window_end": iso(incident.reported_window_end),
         "reported_at": iso(incident.reported_at),
         "occurred_at": iso(incident.occurred_at),
+        **(
+            {"road_report": incident.facts["road_report"]}
+            if include_road and "road_report" in incident.facts
+            else {}
+        ),
         "can_analyze": ready,
         "superseded_plan_ids": superseded or [],
         "next_action": "ANALYZE_IMPACT"

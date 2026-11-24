@@ -6,7 +6,7 @@ from sqlalchemy import delete, select
 
 from app import models as m
 from app.errors import DomainError
-from app.maps import AMapClient
+from app.maps import AMapClient, road_geometry
 from app.services.common import (
     Actor,
     audit,
@@ -242,6 +242,9 @@ def route_inputs(session, actor, vehicle_id, plan_id):
 def route(actor, settings, session_factory, vehicle_id, plan_id=None):
     with session_factory() as session, session.begin():
         lock_fleet(session, actor.tenant_id)
+        road = stored_incident_route(session, actor, vehicle_id, plan_id)
+        if road is not None:
+            return road
         inputs = route_inputs(session, actor, vehicle_id, plan_id)
         key = canonical_hash("map_route", inputs)
         cache = session.scalar(
@@ -292,6 +295,71 @@ def route(actor, settings, session_factory, vehicle_id, plan_id=None):
             )
         )
         return payload
+
+
+def stored_incident_route(session, actor, vehicle_id, plan_id):
+    actor = fresh_actor(session, actor)
+    vehicle = vehicle_access(session, actor, vehicle_id)
+    if plan_id:
+        plans = [plan_access(session, actor, plan_id)]
+    else:
+        plans = session.scalars(
+            select(m.Plan)
+            .join(m.Incident, m.Incident.id == m.Plan.incident_id)
+            .where(
+                m.Plan.tenant_id == actor.tenant_id,
+                m.Incident.vehicle_id == vehicle.id,
+                m.Plan.status == "ACTIVE",
+                m.Incident.status == "EXECUTING",
+            )
+            .order_by(m.Plan.activated_at.desc(), m.Plan.id.desc())
+        ).all()
+        plans = plans[:1]
+
+    for plan in plans:
+        strategy = plan.metrics.get("road_strategy")
+        if not strategy:
+            continue
+        snapshot = session.get(m.Snapshot, plan.snapshot_id)
+        before = next(
+            (v for v in snapshot.payload["vehicles"] if v["vehicle_id"] == vehicle.id), None
+        )
+        if not before:
+            fail("NOT_FOUND", status=404)
+        if plan.status == "ACTIVE":
+            if vehicle.route_revision != before["route_revision"] + 1:
+                if plan_id:
+                    fail("STALE_MAP", "路线已随配送进度更新，此轨迹仅对应调整生效时的位置")
+                continue
+        elif plan_id:
+            check_plan(session, plan, reservation_required=plan.status == "APPROVED_PENDING_ACK")
+        route = snapshot.payload["road_routes"][strategy]
+        return {
+            "vehicle_id": vehicle.id,
+            "vehicle_version": vehicle.version,
+            "route_revision": vehicle.route_revision,
+            "plan_id": plan_id,
+            "plan_version": plan.version if plan_id else None,
+            "routing_version": snapshot.payload["routing_version"],
+            "node_versions": {
+                d["entity_id"]: int(d["version"])
+                for d in snapshot.dependencies
+                if d["entity_type"] == "NODE"
+            },
+            "node_sequence": route["node_sequence"],
+            "distance_m": route["distance_m"],
+            "duration_seconds": route["duration_seconds"],
+            "geometry": road_geometry(route["parts"]),
+            "reported_origin": snapshot.payload.get("road_origin"),
+            "source": "AMAP",
+            "coordinate_system": "GCJ02",
+            "geometry_standard": "GCJ02_GEOJSON_SHAPED",
+            "routing_profile": "DRIVING_CAR",
+            "route_kind": "CURRENT" if plan.status == "ACTIVE" else "CANDIDATE_PREVIEW",
+            "retrieved_at": iso(plan.created_at),
+            "cached": True,
+        }
+    return None
 
 
 def refresh_inputs(session, actor, expected_version, node_ids=None):

@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     amap_request_timeout_seconds: float = Field(default=10, ge=1, le=30)
     amap_cache_ttl_seconds: int = Field(default=300, ge=1, le=3600)
     amap_total_budget_seconds: float = Field(default=60, ge=1, le=60)
+    amap_road_min_interval_seconds: float = Field(default=1.05, ge=0, le=1.5)
 
     @field_validator("cors_allow_origins")
     @classmethod

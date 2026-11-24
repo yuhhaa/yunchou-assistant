@@ -199,6 +199,21 @@ def test_disconnected_provider_steps_never_create_a_straight_connector():
         amap.route([(116.4, 39.9), (116.42, 39.92)])
 
 
+def test_short_provider_step_gap_preserves_separate_road_parts():
+    amap = client()
+
+    def short_gap(request):
+        data = provider(request).json()
+        data["route"]["paths"][0]["steps"][1]["polyline"] = "116.41025,39.91;116.42,39.92"
+        return httpx.Response(200, json=data)
+
+    amap.transport = httpx.MockTransport(short_gap)
+    assert amap.route([(116.4, 39.9), (116.42, 39.92)])["geometry"] == {
+        "type": "MultiLineString",
+        "coordinates": [[[116.4, 39.9], [116.41, 39.91]], [[116.41025, 39.91], [116.42, 39.92]]],
+    }
+
+
 def test_provider_trickling_response_obeys_total_budget():
     amap = client()
     amap.settings.amap_total_budget_seconds = 1

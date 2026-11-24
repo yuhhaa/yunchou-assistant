@@ -1084,192 +1084,6 @@
         ]
       }
     },
-    "/api/v1/agent-tools/incidents": {
-      "post": {
-        "summary": "登记或补充配送异常",
-        "operationId": "upsert_incident",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/IncidentInput"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "成功，data包含结构化业务结果。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "异常已保存，尚未代表解决。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "标准错误，data为null。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "标准错误，data为null。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "标准错误，data为null。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "标准错误，data为null。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "标准错误，data为null。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          },
-          "426": {
-            "description": "标准错误，data为null。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "标准错误，data为null。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "标准错误，data为null。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "标准错误，data为null。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "标准错误，data为null。",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
-                }
-              }
-            }
-          }
-        },
-        "description": "明确异常类型、车辆及必要事实后使用；道路延误必须有明确整数分钟数。CREATE 返回201，UPDATE 返回200；保存不等于解决，窗口须人工核实。写入必须复用逻辑幂等键。",
-        "security": [
-          {
-            "ToolServiceKey": [],
-            "TaskContext": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Request-ID",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{1,64}$"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Trace-ID",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{1,64}$"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Contract-Version",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "enum": [
-                "1.0"
-              ],
-              "default": "1.0"
-            }
-          },
-          {
-            "in": "header",
-            "name": "Idempotency-Key",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Za-z0-9_-]{1,256}$"
-            }
-          }
-        ]
-      }
-    },
     "/api/v1/incidents": {
       "get": {
         "summary": "List Incidents",
@@ -1425,8 +1239,375 @@
         ]
       },
       "post": {
-        "summary": "Incident",
-        "operationId": "incident_api_v1_incidents_post",
+        "summary": "Browser Incident",
+        "operationId": "browser_incident_api_v1_incidents_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BrowserIncidentInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "成功，data包含结构化业务结果。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "异常已保存，尚未代表解决。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[IncidentOutput]"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BrowserLogin": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Trace-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Contract-Version",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1.0"
+              ],
+              "default": "1.0"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,256}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/incidents/{incident_id}/road-recovery": {
+      "post": {
+        "summary": "Road Recovery",
+        "operationId": "road_recovery_api_v1_incidents__incident_id__road_recovery_post",
+        "parameters": [
+          {
+            "name": "incident_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Incident Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Request-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Trace-ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Contract-Version",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1.0"
+              ],
+              "default": "1.0"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,256}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoadRecoveryInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "持久化受理；请查询任务状态。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "426": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "标准错误，data为null。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Envelope[QueuedOutput]"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "BrowserLogin": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agent-tools/incidents": {
+      "post": {
+        "summary": "登记或补充配送异常",
+        "operationId": "upsert_incident",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1559,9 +1740,11 @@
             }
           }
         },
+        "description": "明确异常类型、车辆及必要事实后使用；道路延误必须有明确整数分钟数。CREATE 返回201，UPDATE 返回200；保存不等于解决，窗口须人工核实。写入必须复用逻辑幂等键。",
         "security": [
           {
-            "BrowserLogin": []
+            "ToolServiceKey": [],
+            "TaskContext": []
           }
         ],
         "parameters": [
@@ -6196,6 +6379,160 @@
         ],
         "title": "ApprovalInput"
       },
+      "BrowserIncidentInput": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "CREATE",
+              "UPDATE"
+            ],
+            "title": "Mode"
+          },
+          "incident_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Incident Id"
+          },
+          "expected_incident_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Incident Version"
+          },
+          "event_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ROAD_DELAY",
+                  "RECEIVING_WINDOW_CHANGE",
+                  "VEHICLE_BREAKDOWN"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Type"
+          },
+          "vehicle_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Id"
+          },
+          "order_no": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order No"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "delay_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1440.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delay Minutes"
+          },
+          "reported_window_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported Window Start"
+          },
+          "reported_window_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported Window End"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred At"
+          },
+          "road_report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoadReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "title": "BrowserIncidentInput"
+      },
       "ChatInput": {
         "properties": {
           "message": {
@@ -6277,6 +6614,67 @@
           "occurred_at"
         ],
         "title": "CompletionInput"
+      },
+      "CongestionSegment": {
+        "additionalProperties": false,
+        "properties": {
+          "road_name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Road Name",
+            "type": "string"
+          },
+          "direction": {
+            "maxLength": 48,
+            "minLength": 1,
+            "title": "Direction",
+            "type": "string"
+          },
+          "start": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "maximum": 180,
+                "minimum": -180,
+                "type": "number"
+              },
+              {
+                "maximum": 90,
+                "minimum": -90,
+                "type": "number"
+              }
+            ],
+            "title": "Start",
+            "type": "array"
+          },
+          "end": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "maximum": 180,
+                "minimum": -180,
+                "type": "number"
+              },
+              {
+                "maximum": 90,
+                "minimum": -90,
+                "type": "number"
+              }
+            ],
+            "title": "End",
+            "type": "array"
+          }
+        },
+        "required": [
+          "road_name",
+          "direction",
+          "start",
+          "end"
+        ],
+        "title": "CongestionSegment",
+        "type": "object"
       },
       "HTTPValidationError": {
         "properties": {
@@ -6697,6 +7095,99 @@
           "reason"
         ],
         "title": "RejectionInput"
+      },
+      "RoadLocation": {
+        "additionalProperties": false,
+        "properties": {
+          "longitude": {
+            "maximum": 180,
+            "minimum": -180,
+            "title": "Longitude",
+            "type": "number"
+          },
+          "latitude": {
+            "maximum": 90,
+            "minimum": -90,
+            "title": "Latitude",
+            "type": "number"
+          },
+          "captured_at": {
+            "format": "date-time",
+            "title": "Captured At",
+            "type": "string"
+          },
+          "accuracy_m": {
+            "anyOf": [
+              {
+                "maximum": 250,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Accuracy M"
+          },
+          "source": {
+            "enum": [
+              "GPS",
+              "MAP_PIN"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "coordinate_system": {
+            "enum": [
+              "WGS84",
+              "GCJ02"
+            ],
+            "title": "Coordinate System",
+            "type": "string"
+          }
+        },
+        "required": [
+          "longitude",
+          "latitude",
+          "captured_at",
+          "source",
+          "coordinate_system"
+        ],
+        "title": "RoadLocation",
+        "type": "object"
+      },
+      "RoadRecoveryInput": {
+        "properties": {
+          "expected_incident_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Incident Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_incident_version"
+        ],
+        "title": "RoadRecoveryInput"
+      },
+      "RoadReport": {
+        "additionalProperties": false,
+        "properties": {
+          "location": {
+            "$ref": "#/components/schemas/RoadLocation"
+          },
+          "congestion": {
+            "$ref": "#/components/schemas/CongestionSegment"
+          }
+        },
+        "required": [
+          "location",
+          "congestion"
+        ],
+        "title": "RoadReport",
+        "type": "object"
       },
       "TaskTokenInput": {
         "properties": {
@@ -7682,6 +8173,17 @@
             ],
             "title": "Occurred At"
           },
+          "road_report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoadReport"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "can_analyze": {
             "title": "Can Analyze",
             "type": "boolean"
@@ -7950,6 +8452,17 @@
             },
             "title": "Missing Fields",
             "type": "array"
+          },
+          "road_comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoadComparison"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [
@@ -8131,6 +8644,23 @@
       "Metrics": {
         "additionalProperties": false,
         "properties": {
+          "road_strategy": {
+            "anyOf": [
+              {
+                "enum": [
+                  "WAIT",
+                  "DETOUR",
+                  "RESEQUENCE"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Road Strategy"
+          },
           "unresolved_order_count": {
             "title": "Unresolved Order Count",
             "type": "integer"
@@ -8164,8 +8694,15 @@
             "type": "integer"
           },
           "extra_distance_m": {
-            "title": "Extra Distance M",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Distance M"
           },
           "computation_ms": {
             "title": "Computation Ms",
@@ -8436,6 +8973,157 @@
           "target_routes"
         ],
         "title": "PlanOutput",
+        "type": "object"
+      },
+      "RoadComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "origin": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Origin",
+            "type": "array"
+          },
+          "avoid_area": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "title": "Avoid Area",
+            "type": "array"
+          },
+          "source": {
+            "const": "AMAP",
+            "title": "Source",
+            "type": "string"
+          },
+          "wait_minutes": {
+            "title": "Wait Minutes",
+            "type": "integer"
+          },
+          "recommended_strategy": {
+            "anyOf": [
+              {
+                "enum": [
+                  "WAIT",
+                  "DETOUR",
+                  "RESEQUENCE"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Strategy"
+          },
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/RoadComparisonVariant"
+            },
+            "title": "Variants",
+            "type": "array"
+          }
+        },
+        "required": [
+          "origin",
+          "avoid_area",
+          "source",
+          "wait_minutes",
+          "recommended_strategy",
+          "variants"
+        ],
+        "title": "RoadComparison",
+        "type": "object"
+      },
+      "RoadComparisonVariant": {
+        "additionalProperties": false,
+        "properties": {
+          "strategy": {
+            "enum": [
+              "WAIT",
+              "DETOUR",
+              "RESEQUENCE"
+            ],
+            "title": "Strategy",
+            "type": "string"
+          },
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metrics"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "constraints": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Constraints"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "order_impacts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/OrderImpact"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Order Impacts"
+          }
+        },
+        "required": [
+          "strategy",
+          "available"
+        ],
+        "title": "RoadComparisonVariant",
         "type": "object"
       },
       "SearchScope": {
@@ -10459,6 +11147,42 @@
         "title": "Envelope[GeocodeOutput]",
         "type": "object"
       },
+      "GCJ02MultiLineString": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "MultiLineString",
+            "title": "Type",
+            "type": "string"
+          },
+          "coordinates": {
+            "items": {
+              "items": {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              "type": "array"
+            },
+            "title": "Coordinates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "type",
+          "coordinates"
+        ],
+        "title": "GCJ02MultiLineString",
+        "type": "object"
+      },
       "MapRouteOutput": {
         "additionalProperties": false,
         "properties": {
@@ -10531,9 +11255,35 @@
                 "$ref": "#/components/schemas/GCJ02LineString"
               },
               {
+                "$ref": "#/components/schemas/GCJ02MultiLineString"
+              },
+              {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Geometry"
+          },
+          "reported_origin": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reported Origin"
           },
           "source": {
             "const": "AMAP",

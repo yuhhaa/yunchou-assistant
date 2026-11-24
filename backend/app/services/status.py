@@ -46,7 +46,7 @@ def job_data(session, actor, job_id, *, tool=False):
     job = get(session, m.Job, job_id, actor)
     if job.user_id != actor.user_id:
         fail("NOT_FOUND", status=404)
-    if tool and job.job_type == "CHAT":
+    if tool and (job.job_type == "CHAT" or job.input.get("road_recovery")):
         fail("NOT_FOUND", status=404)
     if job.job_type == "MAP_ROUTING":
         dispatcher(actor)
@@ -153,7 +153,12 @@ def request_operation(session, actor, key):
 def status(session, actor, object_type, object_id):
     kind, state, result, error = None, None, None, None
     if object_type == "INCIDENT":
-        result, kind = incident_data(incident_access(session, actor, object_id)), "INCIDENT"
+        result, kind = (
+            incident_data(
+                incident_access(session, actor, object_id), include_road=not actor.task_id
+            ),
+            "INCIDENT",
+        )
     elif object_type == "PLAN":
         result, kind = (
             current_plan(session, plan_access(session, actor, object_id)),
@@ -163,6 +168,8 @@ def status(session, actor, object_type, object_id):
         analysis = get(session, m.Analysis, object_id, actor)
         incident_access(session, actor, analysis.incident_id)
         result, kind = analysis_data(session, analysis), "IMPACT_ANALYSIS"
+        if actor.task_id:
+            result.pop("road_comparison", None)
     elif object_type == "JOB":
         job = job_data(session, actor, object_id, tool=actor.roots is not None)
         result, kind, state, error = (

@@ -719,6 +719,17 @@ export const useOps = defineStore("ops", () => {
       await poll(r.job_id);
     });
   }
+  async function generateRoadRecovery() {
+    await guard(async () => {
+      const inc = workspace.value?.incident;
+      if (!inc?.road_report) throw Error("请先确认车辆位置与拥堵路段。");
+      const result = await write<Schema["QueuedOutput"]>(
+        "/incidents/" + id(inc.incident_id) + "/road-recovery",
+        { expected_incident_version: inc.incident_version },
+      );
+      await poll(result.job_id);
+    });
+  }
   async function planAction(
     action: "approve" | "reject" | "receipts",
     reason = "",
@@ -768,7 +779,7 @@ export const useOps = defineStore("ops", () => {
       notice.value = "操作已记录，页面显示后端最新状态。";
     });
   }
-  async function report(input: Schema["IncidentInput"]) {
+  async function report(input: Schema["BrowserIncidentInput"]) {
     await guard(async () => {
       const inc = await write<Incident>("/incidents", input);
       await refresh();
@@ -1056,6 +1067,7 @@ export const useOps = defineStore("ops", () => {
     retryPending,
     analyze,
     generate,
+    generateRoadRecovery,
     planAction,
     report,
     chat,

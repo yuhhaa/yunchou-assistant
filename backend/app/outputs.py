@@ -1,5 +1,7 @@
 """Typed public response contracts, also used to validate actual responses in tests."""
 
+from __future__ import annotations
+
 from typing import Literal
 
 from pydantic import JsonValue
@@ -8,6 +10,7 @@ from app.platform import NextAction, RunResult
 from app.schemas import (
     Identifier,
     OrderInput,
+    RoadReport,
     RouteStopInput,
     StrictModel,
     Timestamp,
@@ -85,6 +88,7 @@ class IncidentOutput(StrictModel):
     reported_window_end: Timestamp | None
     reported_at: Timestamp
     occurred_at: Timestamp | None
+    road_report: RoadReport | None = None
     can_analyze: bool
     superseded_plan_ids: list[Identifier]
     next_action: NextAction
@@ -166,9 +170,11 @@ class AnalysisOutput(StrictModel):
     risk_order_count: int
     order_impacts: list[OrderImpact]
     missing_fields: list[str]
+    road_comparison: RoadComparison | None = None
 
 
 class Metrics(StrictModel):
+    road_strategy: Literal["WAIT", "DETOUR", "RESEQUENCE"] | None = None
     unresolved_order_count: int
     late_order_count: int
     high_priority_delay_minutes: int
@@ -177,8 +183,26 @@ class Metrics(StrictModel):
     reassigned_order_count: int
     sequence_inversion_count: int
     total_distance_m: int
-    extra_distance_m: int
+    extra_distance_m: int | None
     computation_ms: int
+
+
+class RoadComparisonVariant(StrictModel):
+    strategy: Literal["WAIT", "DETOUR", "RESEQUENCE"]
+    available: bool
+    reason: str | None = None
+    metrics: Metrics | None = None
+    constraints: Constraints | None = None
+    order_impacts: list[OrderImpact] | None = None
+
+
+class RoadComparison(StrictModel):
+    origin: tuple[float, float]
+    avoid_area: list[tuple[float, float]]
+    source: Literal["AMAP"]
+    wait_minutes: int
+    recommended_strategy: Literal["WAIT", "DETOUR", "RESEQUENCE"] | None
+    variants: list[RoadComparisonVariant]
 
 
 class Change(StrictModel):
@@ -323,6 +347,11 @@ class GCJ02LineString(StrictModel):
     coordinates: list[tuple[float, float]]
 
 
+class GCJ02MultiLineString(StrictModel):
+    type: Literal["MultiLineString"]
+    coordinates: list[list[tuple[float, float]]]
+
+
 class MapRouteOutput(StrictModel):
     vehicle_id: Identifier
     vehicle_version: int
@@ -334,7 +363,8 @@ class MapRouteOutput(StrictModel):
     node_sequence: list[Identifier]
     distance_m: int
     duration_seconds: int
-    geometry: GCJ02LineString | None
+    geometry: GCJ02LineString | GCJ02MultiLineString | None
+    reported_origin: tuple[float, float] | None = None
     source: Literal["AMAP"]
     coordinate_system: Literal["GCJ02"]
     geometry_standard: Literal["GCJ02_GEOJSON_SHAPED"]

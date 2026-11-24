@@ -22,6 +22,7 @@ import type { Context, Schema } from "../../api/types";
 import { label, time } from "../../lib/format";
 import { adaptMapData } from "../../services/maps/mapDataAdapter";
 import { adaptWuhanMap } from "../../services/maps/wuhanAdapter";
+import type { LngLat } from "../../services/maps/amapSdk";
 
 import {
   type GeographicRouteData,
@@ -59,6 +60,7 @@ const props = withDefaults(
     title?: string;
     dataMode?: string;
     inspect?: boolean;
+    reportedPosition?: { coordinates: LngLat; capturedAt: string };
   }>(),
   {
     selectedOrder: "",
@@ -83,8 +85,8 @@ const expanded = ref(false),
   message = ref(""),
   retry = ref(0),
   mapReady = ref(false);
-const mapModel = computed(() =>
-  props.demoMap
+const mapModel = computed(() => {
+  const model = props.demoMap
     ? adaptWuhanMap({
         data: props.demoMap,
         reference: props.referenceMap,
@@ -105,8 +107,27 @@ const mapModel = computed(() =>
         planId: props.planId,
         planVersion: props.planVersion,
         demoAllowed: props.dataMode === "demo",
-      }),
-);
+      });
+  const reported = props.reportedPosition;
+  if (reported) {
+    model.markers = [
+      ...model.markers.filter(
+        (marker) =>
+          marker.kind !== "vehicle" || marker.vehicleId !== props.vehicleId,
+      ),
+      {
+        id: "reported-position",
+        kind: "vehicle",
+        label: "车辆上报位置",
+        coordinates: reported.coordinates,
+        observedAt: reported.capturedAt,
+        vehicleId: props.vehicleId,
+      },
+    ];
+    model.fitKey = [model.fitKey, reported.capturedAt].join(":");
+  }
+  return model;
+});
 const mappedData = computed(() => mapModel.value.markers.length > 0);
 const routeKind = computed(() =>
   mapModel.value.layers.some((l) => l.geometryKind === "SCHEMATIC")

@@ -105,7 +105,11 @@ def install_openapi(app):
                     }[suffix]
                 elif suffix == "/incidents" and method == "post":
                     output = IncidentOutput
-                elif suffix in {"/impact-analyses", "/recovery-plans"}:
+                elif suffix in {
+                    "/impact-analyses",
+                    "/recovery-plans",
+                    "/incidents/{incident_id}/road-recovery",
+                }:
                     output = QueuedOutput
                 elif suffix == "/status":
                     output = (
@@ -134,6 +138,7 @@ def install_openapi(app):
                 accepted = suffix in {
                     "/impact-analyses",
                     "/recovery-plans",
+                    "/incidents/{incident_id}/road-recovery",
                     "/chat",
                     "/map/routing/refresh",
                 }

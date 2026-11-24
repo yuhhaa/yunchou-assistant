@@ -1,12 +1,13 @@
 // Minimal SDK boundary. Loader's untyped result is narrowed here, outside business types.
 export type LngLat = [number, number];
+export type AmapClick = { lnglat?: { getLng(): number; getLat(): number } };
 export interface AmapOverlay {
   setMap(map: AmapInstance | null): void;
   on(name: string, callback: () => void): void;
 }
 export interface AmapInstance {
-  on(name: string, callback: () => void): void;
-  off(name: string, callback: () => void): void;
+  on(name: string, callback: (event: AmapClick) => void): void;
+  off(name: string, callback: (event: AmapClick) => void): void;
   destroy(): void;
   addControl(control: unknown): void;
   setFitView(

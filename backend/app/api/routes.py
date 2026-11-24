@@ -7,6 +7,7 @@ from app import models as m
 from app.api.dependencies import current_actor, idempotency_key, query_only
 from app.schemas import (
     ApprovalInput,
+    BrowserIncidentInput,
     ChatInput,
     CompletionInput,
     HandoffInput,
@@ -18,6 +19,7 @@ from app.schemas import (
     PlanGenerationInput,
     ReceiptInput,
     RejectionInput,
+    RoadRecoveryInput,
     StatusInput,
     TaskTokenInput,
     WindowVerificationInput,
@@ -257,6 +259,17 @@ def delivery_context(
 
 
 @router.post("/incidents")
+def browser_incident(request: Request, body: BrowserIncidentInput, actor: Actor = actor_dependency):
+    return write(request, actor, "upsert_incident", body)
+
+
+@router.post("/incidents/{incident_id}/road-recovery", status_code=202)
+def road_recovery(
+    request: Request, incident_id: str, body: RoadRecoveryInput, actor: Actor = actor_dependency
+):
+    return write(request, actor, "generate_road_recovery", body, incident_id)
+
+
 @router.post("/agent-tools/incidents", operation_id="upsert_incident")
 def incident(request: Request, body: IncidentInput, actor: Actor = actor_dependency):
     return write(request, actor, "upsert_incident", body)

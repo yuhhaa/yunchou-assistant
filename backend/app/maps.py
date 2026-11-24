@@ -42,6 +42,34 @@ def _text(value):
     return value if isinstance(value, str) and value else None
 
 
+def geometry_parts(geometry):
+    if not geometry:
+        return []
+    return (
+        [geometry["coordinates"]] if geometry["type"] == "LineString" else geometry["coordinates"]
+    )
+
+
+def road_geometry(parts):
+    merged = []
+    for part in parts:
+        if merged and merged[-1][-1] == part[0]:
+            merged[-1].extend(part[1:])
+        else:
+            merged.append(list(part))
+    if not merged:
+        return None
+    if len(merged) == 1:
+        return {"type": "LineString", "coordinates": merged[0]}
+    return {"type": "MultiLineString", "coordinates": merged}
+
+
+def _gap_metres(a, b):
+    return 111_320 * math.hypot(
+        (a[0] - b[0]) * math.cos(math.radians((a[1] + b[1]) / 2)), a[1] - b[1]
+    )
+
+
 class AMapClient:
     def __init__(self, settings, transport=None):
         self.settings, self.transport = settings, transport
@@ -104,6 +132,10 @@ class AMapClient:
 
             data = json.loads(content)
         if data.get("status") != "1":
+            if str(data.get("infocode")) in {"10004", "10014", "10019", "10020", "10021"}:
+                raise DomainError(
+                    "MAP_RATE_LIMITED", "高德道路服务限流，请稍后重试", 503, retryable=True
+                )
             raise DomainError(
                 "MAP_UNAVAILABLE", "Map provider rejected request", 503, retryable=True
             )
@@ -132,7 +164,7 @@ class AMapClient:
 
         return self._run(work)
 
-    async def _leg(self, client, key, origin, destination):
+    async def _leg(self, client, key, origin, destination, *, bounds=None):
         data = await self._request(
             client,
             key,
@@ -142,45 +174,125 @@ class AMapClient:
                 "destination": f"{destination[0]:.6f},{destination[1]:.6f}",
                 "show_fields": "cost,polyline",
                 "strategy": "32",
+                **({"avoidpolygons": bounds.provider_value()} if bounds else {}),
             },
         )
         paths = data["route"]["paths"]
         if not paths:
             raise DomainError("MAP_NO_ROUTE", "Provider found no driving route", 422)
-        path, points = paths[0], []
+        for path in paths if bounds else paths[:1]:
+            candidate = self._path(path)
+            parts = geometry_parts(candidate["geometry"])
+            if bounds is None or not (
+                any(bounds.intersects(part) for part in parts)
+                or any(bounds.intersects([a[-1], b[0]]) for a, b in pairwise(parts))
+            ):
+                return candidate
+        raise DomainError("MAP_NO_ROUTE", "No route avoids the confirmed area", 422)
+
+    @staticmethod
+    def _path(path):
+        parts = []
         for step in path["steps"]:
             segment = [_coordinate(text) for text in step["polyline"].split(";")]
-            if points and points[-1] != segment[0]:
+            points = [p for i, p in enumerate(segment) if i == 0 or p != segment[i - 1]]
+            if len(points) < 2:
+                continue
+            if parts and _gap_metres(parts[-1][-1], points[0]) > 100:
                 raise ValueError("Disconnected road geometry")
-            for point in segment:
-                if not points or point != points[-1]:
-                    points.append(point)
-        if len(points) < 2:
+            parts.append(points)
+        geometry = road_geometry(parts)
+        if not geometry:
             raise ValueError("Missing road geometry")
         return {
             "distance_m": _number(path["distance"]),
             "duration_seconds": _number(path["cost"]["duration"]),
-            "geometry": {"type": "LineString", "coordinates": points},
+            "geometry": geometry,
         }
+
+    def incident_legs(self, location, destinations, remaining, bounds):
+        """Resolve one observed origin and cost the bounded set of needed edges."""
+
+        async def work(client, key):
+            origin = [location["longitude"], location["latitude"]]
+            loop = asyncio.get_running_loop()
+            next_request = loop.time()
+
+            async def paced(call):
+                nonlocal next_request
+                for attempt in range(3):
+                    await asyncio.sleep(max(0, next_request - loop.time()))
+                    next_request = loop.time() + self.settings.amap_road_min_interval_seconds
+                    try:
+                        return await call()
+                    except DomainError as error:
+                        if error.code != "MAP_RATE_LIMITED" or attempt == 2:
+                            raise
+                        next_request = max(next_request, loop.time() + 1 + attempt)
+
+            if location["coordinate_system"] == "WGS84":
+                converted = await paced(
+                    lambda: self._request(
+                        client,
+                        key,
+                        "/v3/assistant/coordinate/convert",
+                        {
+                            "locations": f"{origin[0]:.6f},{origin[1]:.6f}",
+                            "coordsys": "gps",
+                        },
+                    )
+                )
+                origin = _coordinate(converted["locations"])
+            points = {**destinations, "ROAD_ORIGIN": origin}
+            direct_pairs = set(pairwise(["ROAD_ORIGIN", *remaining]))
+            avoid_pairs = {(a, b) for a in points for b in destinations if a != b}
+            avoid_pairs.update((b, b) for b in destinations)
+
+            async def cost(pair, area):
+                a, b = (points[n] for n in pair)
+                if a == b and (area is None or not area.contains(a)):
+                    return {"distance_m": 0, "duration_seconds": 0, "geometry": None}
+                if area and (area.contains(a) or area.contains(b)):
+                    return None
+                try:
+                    leg = await paced(lambda: self._leg(client, key, a, b, bounds=area))
+                    parts = geometry_parts(leg["geometry"])
+                    first, last = parts[0][0], parts[-1][-1]
+                    if any(_gap_metres(p, q) > 100 for p, q in zip((a, b), (first, last))):
+                        raise ValueError("Driving path does not reach the requested points")
+                    if area and (area.intersects([a, first]) or area.intersects([last, b])):
+                        return None
+                    return leg
+                except DomainError as err:
+                    if err.code != "MAP_NO_ROUTE":
+                        raise
+                    return None
+
+            direct_order, avoid_order = sorted(direct_pairs), sorted(avoid_pairs)
+            tasks = [(p, None) for p in direct_order] + [(p, bounds) for p in avoid_order]
+            legs = [await cost(pair, area) for pair, area in tasks]
+            return (
+                origin,
+                dict(zip(direct_order, legs[: len(direct_order)])),
+                dict(zip(avoid_order, legs[len(direct_order) :])),
+            )
+
+        return self._run(work)
 
     def route(self, points):
         async def work(client, key):
-            distance, duration, geometry = 0, 0, []
+            distance, duration, parts = 0, 0, []
             for origin, destination in pairwise(points):
                 if origin == destination:
                     continue
                 leg = await self._leg(client, key, origin, destination)
                 distance += leg["distance_m"]
                 duration += leg["duration_seconds"]
-                if geometry and geometry[-1] != leg["geometry"]["coordinates"][0]:
-                    raise ValueError("Disconnected route legs")
-                for point in leg["geometry"]["coordinates"]:
-                    if not geometry or geometry[-1] != point:
-                        geometry.append(point)
+                parts.extend(geometry_parts(leg["geometry"]))
             return {
                 "distance_m": distance,
                 "duration_seconds": duration,
-                "geometry": {"type": "LineString", "coordinates": geometry} if geometry else None,
+                "geometry": road_geometry(parts),
             }
 
         return self._run(work)

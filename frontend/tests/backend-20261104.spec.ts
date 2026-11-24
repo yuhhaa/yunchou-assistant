@@ -172,6 +172,51 @@ async function api(
   return { maps, posts, contextReads: () => contextReads };
 }
 
+test("司机在地图选择车辆位置及拥堵两端后提交现场信息", async ({ page }) => {
+  const { posts } = await api(page);
+  await page.getByRole("button", { name: "上报异常", exact: true }).click();
+  const form = page.getByRole("dialog", { name: "上报配送异常" });
+  await form.getByLabel("预计延误（分钟）").fill("20");
+  await form.getByLabel("现场描述").fill("前方拥堵");
+  await form.getByRole("button", { name: "添加现场位置与拥堵路段" }).click();
+  await form.getByLabel("道路名称").fill("演示路");
+  await form.getByLabel("行驶方向").fill("向东");
+  const submit = form.getByRole("button", { name: "提交异常" });
+  await expect(submit).toBeDisabled();
+  const host = form.locator(".amap-host");
+  await expect(host).toHaveAttribute("data-test-double", "true");
+  for (const point of [
+    [114.3, 30.5],
+    [114.309, 30.499],
+    [114.311, 30.501],
+  ])
+    await host.evaluate(
+      (el, detail) =>
+        el.dispatchEvent(new CustomEvent("test-map-pick", { detail })),
+      point,
+    );
+  await expect(submit).toBeEnabled();
+  await submit.click();
+  await expect
+    .poll(
+      () => posts.find((item) => item.path === "/incidents")?.body.road_report,
+    )
+    .toMatchObject({
+      location: {
+        longitude: 114.3,
+        latitude: 30.5,
+        source: "MAP_PIN",
+        coordinate_system: "GCJ02",
+      },
+      congestion: {
+        road_name: "演示路",
+        direction: "向东",
+        start: [114.309, 30.499],
+        end: [114.311, 30.501],
+      },
+    });
+});
+
 test("35路径契约服务：候选参数成对、历史按next_offset分页", async () => {
   expect(() => demoMapPath("", "P")).toThrow();
   expect(demoMapPath("V01", "real/id")).toBe(
@@ -714,34 +759,61 @@ for (const discovery of ["manual", "automatic"] as const) {
     await api(page, "DRIVER");
     const base = (await mockRequest<any>("/incidents")).incidents[0];
     const old = { ...base, status: "EXECUTING" };
-    const incoming = { ...base, incident_id: "INC_NEW_ACK", status: "AWAITING_ACK" };
+    const incoming = {
+      ...base,
+      incident_id: "INC_NEW_ACK",
+      status: "AWAITING_ACK",
+    };
     const context = await mockRequest<any>("/delivery-context");
     const analysisJob = await mockRequest<any>("/impact-analyses", {
-      incident_id: base.incident_id, snapshot_id: context.snapshot_id,
+      incident_id: base.incident_id,
+      snapshot_id: context.snapshot_id,
       expected_incident_version: base.incident_version,
     });
-    const analysis = (await mockRequest<any>(`/jobs/${analysisJob.job_id}`)).result;
+    const analysis = (await mockRequest<any>(`/jobs/${analysisJob.job_id}`))
+      .result;
     const generation = await mockRequest<any>("/recovery-plans", {
-      incident_id: base.incident_id, snapshot_id: analysis.snapshot_id,
-      expected_incident_version: base.incident_version, analysis_id: analysis.analysis_id,
+      incident_id: base.incident_id,
+      snapshot_id: analysis.snapshot_id,
+      expected_incident_version: base.incident_version,
+      analysis_id: analysis.analysis_id,
     });
-    const plan = (await mockRequest<any>(`/jobs/${generation.job_id}`)).result.plans[0];
+    const plan = (await mockRequest<any>(`/jobs/${generation.job_id}`)).result
+      .plans[0];
     let published = false;
     await page.route("**/api/v1/incidents**", async (r) => {
       const path = new URL(r.request().url()).pathname;
       const data = path.endsWith("/incidents")
         ? { incidents: published ? [old, incoming] : [old] }
-        : { incident: path.includes("INC_NEW_ACK") ? incoming : old, analyses: [],
-            plans: path.includes("INC_NEW_ACK") ? [{ ...plan, incident_id: incoming.incident_id,
-              status: "APPROVED_PENDING_ACK", approval_mode: "MANUAL" }] : [] };
+        : {
+            incident: path.includes("INC_NEW_ACK") ? incoming : old,
+            analyses: [],
+            plans: path.includes("INC_NEW_ACK")
+              ? [
+                  {
+                    ...plan,
+                    incident_id: incoming.incident_id,
+                    status: "APPROVED_PENDING_ACK",
+                    approval_mode: "MANUAL",
+                  },
+                ]
+              : [],
+          };
       return r.fulfill({ json: envelope(data) });
     });
-    await page.getByRole("button", { name: "刷新司机异常", exact: true }).click();
-    await expect(page.getByRole("button", { name: "接受调整", exact: false })).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "刷新司机异常", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "接受调整", exact: false }),
+    ).toHaveCount(0);
     published = true;
     if (discovery === "manual")
-      await page.getByRole("button", { name: "刷新司机异常", exact: true }).click();
-    await expect(page.getByRole("button", { name: "接受调整", exact: false }))
-      .toBeVisible({ timeout: 16000 });
+      await page
+        .getByRole("button", { name: "刷新司机异常", exact: true })
+        .click();
+    await expect(
+      page.getByRole("button", { name: "接受调整", exact: false }),
+    ).toBeVisible({ timeout: 16000 });
   });
 }

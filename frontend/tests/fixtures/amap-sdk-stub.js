@@ -12,6 +12,11 @@ class MapStub {
   constructor(host) {
     this.host = host;
     this.events = {};
+    host.addEventListener("test-map-pick", ({ detail }) => {
+      this.events.click?.({
+        lnglat: { getLng: () => detail[0], getLat: () => detail[1] },
+      });
+    });
     window.__amapTest.created++;
     host.dataset.testDouble = "true";
   }

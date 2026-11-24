@@ -12,6 +12,12 @@ from app.services.common import (
 
 
 def upsert(session, actor, body, settings, operation_id):
+    road_report = getattr(body, "road_report", None)
+    road_facts = None
+    if road_report:
+        from app.services.road_recovery import report_facts
+
+        road_facts = report_facts(road_report)
     superseded = []
     if body.mode == "CREATE":
         vehicle = vehicle_access(session, actor, body.vehicle_id)
@@ -19,9 +25,15 @@ def upsert(session, actor, body, settings, operation_id):
             order = get(session, m.Order, body.order_no, actor)
             if order.assigned_vehicle_id != vehicle.id:
                 fail("NOT_FOUND", status=404)
-        values = body.model_dump(exclude={"mode", "incident_id", "expected_incident_version"})
+        values = body.model_dump(
+            exclude={"mode", "incident_id", "expected_incident_version", "road_report"}
+        )
         incident = m.Incident(
-            id=m.new_id(), tenant_id=actor.tenant_id, user_id=actor.user_id, **values, facts={}
+            id=m.new_id(),
+            tenant_id=actor.tenant_id,
+            user_id=actor.user_id,
+            **values,
+            facts={"road_report": road_facts} if road_facts else {},
         )
         incident.status = {
             "ROAD_DELAY": "READY_FOR_ANALYSIS",
@@ -42,8 +54,14 @@ def upsert(session, actor, body, settings, operation_id):
         if incident.version != body.expected_incident_version:
             fail("STALE_INCIDENT")
         values = body.model_dump(
-            exclude_unset=True, exclude={"mode", "incident_id", "expected_incident_version"}
+            exclude_unset=True,
+            exclude={"mode", "incident_id", "expected_incident_version", "road_report"},
         )
+        if road_facts:
+            if incident.event_type != "ROAD_DELAY":
+                fail("INVALID_INPUT", "仅道路延误可以补充拥堵路段", 422)
+            if incident.status in {"AWAITING_ACK", "EXECUTING", "RESOLVED"}:
+                fail("INCIDENT_NOT_READY", "当前事件已进入确认或执行阶段")
         if incident.event_type != "ROAD_DELAY" and "delay_minutes" in values:
             fail("INVALID_INPUT", "delay_minutes applies only to road delay", 422)
         if incident.event_type != "RECEIVING_WINDOW_CHANGE" and any(
@@ -53,6 +71,9 @@ def upsert(session, actor, body, settings, operation_id):
         if any(v is None for v in values.values()):
             fail("INVALID_INPUT", "Business fields cannot be cleared", 422)
         changed = any(getattr(incident, k) != v for k, v in values.items() if k != "description")
+        if road_facts and road_facts != incident.facts.get("road_report"):
+            changed = True
+            incident.facts = {**incident.facts, "road_report": road_facts}
         for key, value in values.items():
             setattr(incident, key, value)
         if changed:
@@ -76,7 +97,9 @@ def upsert(session, actor, body, settings, operation_id):
         {"incident_version": incident.version},
         operation_id,
     )
-    return incident_data(incident, superseded), 201 if body.mode == "CREATE" else 200
+    return incident_data(
+        incident, superseded, include_road=not actor.task_id
+    ), 201 if body.mode == "CREATE" else 200
 
 
 def verify_window(session, actor, incident_id, body, settings, operation_id):

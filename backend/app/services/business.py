@@ -41,7 +41,10 @@ class Business:
         return lifecycle.expire_reservations(session_factory=self.session_factory)
 
     def write(self, actor, action, body, key, *, target_id=None, request_id=None, turn_id=None):
-        body_hash = canonical_hash(action, {"target_id": target_id, **body.model_dump(mode="json")})
+        values = body.model_dump(mode="json")
+        if values.get("road_report") is None:
+            values.pop("road_report", None)
+        body_hash = canonical_hash(action, {"target_id": target_id, **values})
         with self.session_factory() as session, session.begin():
             # Serializing a user's idempotency namespace makes simultaneous same-key
             # requests wait for the committed original, without a partial write.
@@ -145,6 +148,10 @@ class Business:
             suffix = (body, self.settings, operation.id)
             if action == "upsert_incident":
                 data, code = incidents.upsert(*args, *suffix)
+            elif action == "generate_road_recovery":
+                from app.services import road_recovery
+
+                data, code = road_recovery.submit(*args, target_id, *suffix)
             elif action in {"update_map_node", "refresh_map_routing"}:
                 from app.services import maps
 

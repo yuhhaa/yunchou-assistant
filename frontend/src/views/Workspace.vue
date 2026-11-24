@@ -32,13 +32,16 @@ import { useOps } from "../stores/ops";
 import { label, time, number } from "../lib/format";
 import RouteTimeline from "../components/RouteTimeline.vue";
 import MapView from "../components/maps/MapView.vue";
+import RoadReportFields from "../components/maps/RoadReportFields.vue";
+import RoadPlanMap from "../components/maps/RoadPlanMap.vue";
 import CasePulse from "../components/design/CasePulse.vue";
 import ProcessLedger from "../components/design/ProcessLedger.vue";
 import RiskRibbon from "../components/design/RiskRibbon.vue";
 import PlanInstrument from "../components/design/PlanInstrument.vue";
 import DeliveryProgress from "../components/design/DeliveryProgress.vue";
 import { useDeliveryMaps } from "../composables/useDeliveryMaps";
-import type { Schema } from "../api/types";
+import type { Incident, Schema } from "../api/types";
+import type { LngLat } from "../services/maps/amapSdk";
 const ops = useOps(),
   route = useRoute(),
   router = useRouter();
@@ -59,8 +62,18 @@ const eventType = ref<
   windowStart = ref(""),
   windowEnd = ref("");
 const selectedOrder = ref("");
+const includeRoad = ref(false);
+const roadReport = ref<Schema["RoadReport"] | null>(null);
+const roadEdit = ref<Incident>();
+const roadNames = {
+  WAIT: "保持原顺序并等待",
+  DETOUR: "原配送顺序绕行",
+  RESEQUENCE: "绕行并调整配送顺序",
+};
 const lifecycleJob = ref<{ incidentId: string; jobId: string }>();
-async function runLifecycle(action: "analyze" | "generate") {
+async function runLifecycle(
+  action: "analyze" | "generate" | "generateRoadRecovery",
+) {
   const incidentId = ops.workspace?.incident.incident_id;
   if (!incidentId || ops.busy) return;
   const previous = ops.job?.job_id;
@@ -88,6 +101,43 @@ const driverTab = ref("today");
 const selectedStop = ref("");
 const p = computed(() => ops.selectedPlan),
   inc = computed(() => ops.workspace?.incident);
+const comparison = computed(() => ops.analysis?.road_comparison);
+const staleRoadLocation = computed(() => {
+  const captured = inc.value?.road_report?.location.captured_at;
+  return !!captured && ops.realTime - Date.parse(captured) >= 300_000;
+});
+const reportedPosition = computed(() => {
+  const location = inc.value?.road_report?.location;
+  if (!location || staleRoadLocation.value) return;
+  const coordinates: LngLat | undefined =
+    comparison.value?.origin ??
+    (location.coordinate_system === "GCJ02"
+      ? [location.longitude, location.latitude]
+      : undefined);
+  if (coordinates) return { coordinates, capturedAt: location.captured_at };
+});
+function canEditRoad(incident: Incident) {
+  return (
+    ops.mode === "api" &&
+    incident.event_type === "ROAD_DELAY" &&
+    !["AWAITING_ACK", "EXECUTING", "RESOLVED"].includes(incident.status)
+  );
+}
+function beginRoadEdit(incident: Incident) {
+  roadReport.value = null;
+  roadEdit.value = incident;
+}
+async function updateRoadReport() {
+  const incident = roadEdit.value;
+  if (!incident || !roadReport.value) return;
+  await ops.report({
+    mode: "UPDATE",
+    incident_id: incident.incident_id,
+    expected_incident_version: incident.incident_version,
+    road_report: roadReport.value,
+  });
+  if (!ops.error) roadEdit.value = undefined;
+}
 const activeOrders = computed(
   () =>
     ops.context?.orders.filter(
@@ -144,7 +194,13 @@ const metricRows = computed(() =>
         ["变更订单", p.value.metrics.changed_order_count, "单"],
         ["改派车辆订单", p.value.metrics.reassigned_order_count, "单"],
         ["停靠顺序逆序数", p.value.metrics.sequence_inversion_count, "次"],
-        ["额外里程", p.value.metrics.extra_distance_m / 1000, "km"],
+        [
+          "额外里程",
+          p.value.metrics.extra_distance_m === null
+            ? null
+            : p.value.metrics.extra_distance_m / 1000,
+          "km",
+        ],
         ["仍有风险的订单", p.value.metrics.late_order_count, "单"],
       ]
     : [],
@@ -337,9 +393,11 @@ function beginReport() {
   vehicleId.value =
     ops.user?.vehicle_id || ops.context?.vehicles[0]?.vehicle_id || "";
   showReport.value = true;
+  includeRoad.value = false;
+  roadReport.value = null;
 }
 async function submitReport() {
-  const body: Schema["IncidentInput"] = {
+  const body: Schema["BrowserIncidentInput"] = {
     mode: "CREATE",
     event_type: eventType.value,
     vehicle_id: vehicleId.value,
@@ -347,6 +405,11 @@ async function submitReport() {
     ...(orderNo.value ? { order_no: orderNo.value } : {}),
     ...(eventType.value === "ROAD_DELAY" && delay.value !== null
       ? { delay_minutes: delay.value }
+      : {}),
+    ...(eventType.value === "ROAD_DELAY" &&
+    includeRoad.value &&
+    roadReport.value
+      ? { road_report: roadReport.value }
       : {}),
     ...(eventType.value === "RECEIVING_WINDOW_CHANGE"
       ? {
@@ -399,7 +462,8 @@ const refreshTimer = setInterval(() => {
     !ops.busy &&
     !showReport.value &&
     !dialog.value &&
-    (ops.isDriver || ops.workspace?.plans.some((p) => p.status === "APPROVED_PENDING_ACK"))
+    (ops.isDriver ||
+      ops.workspace?.plans.some((p) => p.status === "APPROVED_PENDING_ACK"))
   )
     ops.guard(ops.refresh);
 }, 10000);
@@ -675,7 +739,14 @@ onUnmounted(() => {
               {{ ops.mapRouting.node_count }} 节点（计划状态未改变）</small
             >
           </div>
+          <RoadPlanMap
+            v-if="validMapPlan && workbenchPlan?.metrics.road_strategy"
+            :plan="workbenchPlan"
+            :vehicle-id="validMapPlan.vehicleId"
+            :area="comparison?.avoid_area"
+          />
           <MapView
+            v-else
             :demo-map="visibleMap"
             :reference-map="validMapPlan ? currentMap : undefined"
             :data-loading="mapLoading || previewMapLoading"
@@ -685,6 +756,11 @@ onUnmounted(() => {
             @select-node="selectMapNode"
             :context="ops.context"
             :vehicle-id="validMapPlan?.vehicleId || mapScope"
+            :reported-position="
+              !validMapPlan && inc?.vehicle_id === mapScope
+                ? reportedPosition
+                : undefined
+            "
             v-model:selected-order="selectedOrder"
             :risk-orders="riskOrders"
             :data-mode="ops.mode"
@@ -842,14 +918,37 @@ onUnmounted(() => {
             <div>
               <span>受影响订单</span
               ><b>{{
-                ops.analysis
-                  ? ops.analysis.risk_order_count + " 单"
-                  : "尚未分析"
+                comparison && !comparison.variants[0]?.metrics
+                  ? "原路暂无估算"
+                  : ops.analysis
+                    ? ops.analysis.risk_order_count + " 单"
+                    : "尚未分析"
               }}</b>
             </div>
             <div>
               <span>下一步</span><b>{{ label(inc.next_action) }}</b>
             </div>
+          </div>
+          <div v-if="inc.road_report" class="detail-facts">
+            <div>
+              <span>拥堵路段</span
+              ><b
+                >{{ inc.road_report.congestion.road_name }} ·
+                {{ inc.road_report.congestion.direction }}</b
+              >
+            </div>
+            <div>
+              <span>车辆上报位置</span
+              ><b
+                >{{
+                  inc.road_report.location.source === "GPS" ? "GPS" : "地图选点"
+                }}
+                · {{ time(inc.road_report.location.captured_at) }}</b
+              >
+            </div>
+            <p v-if="staleRoadLocation">
+              上报位置已过期，请重新确认位置后计算。
+            </p>
           </div>
           <ProcessLedger
             :now="ops.realTime"
@@ -882,6 +981,30 @@ onUnmounted(() => {
           </div>
           <div class="detail-actions">
             <button
+              v-if="canEditRoad(inc)"
+              class="secondary full"
+              @click="beginRoadEdit(inc)"
+            >
+              {{
+                inc.road_report
+                  ? "重新确认位置与拥堵路段"
+                  : "补充位置与拥堵路段"
+              }}
+            </button>
+            <button
+              v-if="inc.road_report"
+              class="primary full"
+              :disabled="
+                ops.busy ||
+                staleRoadLocation ||
+                !(inc.can_analyze || inc.status === 'MANUAL_REVIEW')
+              "
+              @click="runLifecycle('generateRoadRecovery')"
+            >
+              比较道路恢复方案
+            </button>
+            <button
+              v-else
               class="primary full"
               :disabled="ops.busy || !inc.can_analyze"
               @click="runLifecycle('analyze')"
@@ -889,6 +1012,7 @@ onUnmounted(() => {
               <MessageSquareText :size="16" /> 执行影响分析
               <ArrowRight :size="16" /></button
             ><button
+              v-if="!inc.road_report"
               class="secondary full"
               :disabled="ops.busy || !ops.analysis"
               @click="runLifecycle('generate')"
@@ -920,7 +1044,87 @@ onUnmounted(() => {
         </aside>
       </div>
     </div>
-    <section v-if="ops.analysis" class="impact-panel panel">
+    <section v-if="comparison" class="impact-panel panel">
+      <header class="section-header">
+        <h2>道路恢复对比</h2>
+        <span>高德道路 · 从同一上报位置出发</span>
+      </header>
+      <p>
+        等待方案按上报的
+        {{ comparison.wait_minutes }} 分钟估算额外等待。预计到达使用{{
+          ops.context?.clock_mode === "SIMULATION"
+            ? "演示业务时钟"
+            : "业务时钟"
+        }}。
+      </p>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>方案</th>
+              <th>迟到</th>
+              <th>额外里程</th>
+              <th>预计到达</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="variant in comparison.variants" :key="variant.strategy">
+              <td>
+                {{ roadNames[variant.strategy] }}
+                <strong
+                  v-if="variant.strategy === comparison.recommended_strategy"
+                  >推荐</strong
+                >
+              </td>
+              <td>
+                {{
+                  variant.metrics
+                    ? variant.metrics.late_order_count +
+                      " 单 / " +
+                      variant.metrics.total_delay_minutes +
+                      " 分钟"
+                    : "—"
+                }}
+              </td>
+              <td>
+                {{
+                  variant.metrics?.extra_distance_m != null
+                    ? (variant.metrics.extra_distance_m / 1000).toFixed(1) +
+                      " km"
+                    : "—"
+                }}
+              </td>
+              <td>
+                <div
+                  v-for="order in variant.order_impacts || []"
+                  :key="order.order_no"
+                >
+                  {{ order.order_no }} · {{ time(order.updated_eta) }}
+                </div>
+              </td>
+              <td>
+                <RouterLink
+                  v-if="variant.available"
+                  to="/plans"
+                  @click="
+                    ops.selectedPlanId =
+                      ops.workspace?.plans.find(
+                        (plan) =>
+                          plan.snapshot_id === ops.analysis?.snapshot_id &&
+                          plan.metrics.road_strategy === variant.strategy,
+                      )?.plan_id || ''
+                  "
+                  >查看轨迹与审批</RouterLink
+                >
+                <span v-else>{{ variant.reason || "违反配送约束" }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section v-else-if="ops.analysis" class="impact-panel panel">
       <header class="section-header">
         <div>
           <h2>订单影响分析</h2>
@@ -1015,7 +1219,11 @@ onUnmounted(() => {
           @click="ops.selectedPlanId = candidate.plan_id"
         >
           <span class="mono">{{ String(index + 1).padStart(2, "0") }}</span>
-          恢复候选
+          {{
+            candidate.metrics.road_strategy
+              ? roadNames[candidate.metrics.road_strategy]
+              : "恢复候选"
+          }}
           <span class="badge" :class="ops.expired(candidate) ? 'danger' : ''">{{
             label(candidate.status)
           }}</span>
@@ -1097,7 +1305,18 @@ onUnmounted(() => {
               ><i>03</i>恢复候选</span
             ><ArrowRight :size="13" /><span><i>04</i>变更与约束</span>
           </div>
+          <RoadPlanMap
+            v-if="
+              p.metrics.road_strategy &&
+              (p.status === 'ACTIVE' ||
+                (planMapMode === 'candidate' && !ops.expired(p)))
+            "
+            :plan="p"
+            :vehicle-id="inc?.vehicle_id || mapVehicle"
+            :area="comparison?.avoid_area"
+          />
           <MapView
+            v-else
             :demo-map="visibleMap"
             :reference-map="validMapPlan ? currentMap : undefined"
             :data-loading="mapLoading || previewMapLoading"
@@ -1474,7 +1693,24 @@ onUnmounted(() => {
             )"
             :key="plan.plan_id"
           >
-            <span class="badge warning">{{ plan.approval_mode === 'AUTOMATIC_RULE' ? '规则自动审核通过' : '已获调度批准' }} · 等待您的确认</span>
+            <span class="badge warning"
+              >{{
+                plan.approval_mode === "AUTOMATIC_RULE"
+                  ? "规则自动审核通过"
+                  : "已获调度批准"
+              }}
+              · 等待您的确认</span
+            >
+            <details v-if="plan.metrics.road_strategy">
+              <summary>
+                {{ roadNames[plan.metrics.road_strategy] }} · 查看候选道路
+              </summary>
+              <RoadPlanMap
+                :plan="plan"
+                :vehicle-id="ops.user?.vehicle_id || ''"
+                :area="comparison?.avoid_area"
+              />
+            </details>
             <div
               v-for="c in plan.changes.filter(
                 (c) =>
@@ -1590,7 +1826,21 @@ onUnmounted(() => {
             </select></label
           >
         </div>
+        <RoadPlanMap
+          v-if="
+            (validMapPlan && workbenchPlan?.metrics.road_strategy) ||
+            confirmedAdjustments?.metrics.road_strategy
+          "
+          :plan="
+            (validMapPlan && workbenchPlan?.metrics.road_strategy
+              ? workbenchPlan
+              : confirmedAdjustments)!
+          "
+          :vehicle-id="ops.user?.vehicle_id || ''"
+          :area="comparison?.avoid_area"
+        />
         <MapView
+          v-else
           :demo-map="visibleMap"
           :reference-map="validMapPlan ? currentMap : undefined"
           :data-loading="mapLoading || previewMapLoading"
@@ -1683,6 +1933,13 @@ onUnmounted(() => {
           </p>
           <div v-if="inc" class="next-action-note">
             下一步：{{ label(inc.next_action) }}
+            <button
+              v-if="canEditRoad(inc)"
+              class="secondary"
+              @click="beginRoadEdit(inc)"
+            >
+              补充位置与拥堵路段
+            </button>
           </div>
         </section>
       </aside>
@@ -1697,18 +1954,21 @@ onUnmounted(() => {
     </nav>
   </main>
   <div
-    v-if="showReport || dialog"
+    v-if="showReport || dialog || roadEdit"
     class="modal-backdrop"
     @click.self="
       showReport = false;
       dialog = null;
+      roadEdit = undefined;
     "
   >
     <section
       class="modal"
       role="dialog"
       aria-modal="true"
-      :aria-label="showReport ? '上报配送异常' : '确认业务操作'"
+      :aria-label="
+        roadEdit ? '补充现场信息' : showReport ? '上报配送异常' : '确认业务操作'
+      "
     >
       <button
         class="modal-close icon-button"
@@ -1716,12 +1976,26 @@ onUnmounted(() => {
         @click="
           showReport = false;
           dialog = null;
+          roadEdit = undefined;
         "
       >
         <X :size="20" />
       </button>
       <p v-if="ops.error" class="modal-error">{{ ops.error }}</p>
-      <template v-if="showReport">
+      <template v-if="roadEdit">
+        <h2>补充现场信息</h2>
+        <p>确认车辆当前位置后，填写道路名称和方向并标出拥堵范围。</p>
+        <form class="report-form" @submit.prevent="updateRoadReport">
+          <RoadReportFields
+            v-model="roadReport"
+            :initial="roadEdit.road_report"
+          />
+          <button class="primary full" :disabled="ops.busy || !roadReport">
+            保存现场信息
+          </button>
+        </form>
+      </template>
+      <template v-else-if="showReport">
         <h2>上报配送异常</h2>
         <p>请填写现场事实。系统会根据真实数据分析影响。</p>
         <form class="report-form" @submit.prevent="submitReport">
@@ -1770,6 +2044,22 @@ onUnmounted(() => {
               required
               placeholder="请输入整数，0 也是有效值"
           /></label>
+          <template v-if="eventType === 'ROAD_DELAY' && ops.mode === 'api'">
+            <button
+              type="button"
+              class="secondary full"
+              :aria-expanded="includeRoad"
+              @click="
+                includeRoad = !includeRoad;
+                roadReport = null;
+              "
+            >
+              {{
+                includeRoad ? "收起现场位置与路段" : "添加现场位置与拥堵路段"
+              }}
+            </button>
+            <RoadReportFields v-if="includeRoad" v-model="roadReport" />
+          </template>
           <div v-if="eventType === 'RECEIVING_WINDOW_CHANGE'" class="form-row">
             <label
               >新收货开始<input
@@ -1797,7 +2087,13 @@ onUnmounted(() => {
                 ? "后端仿真业务时钟"
                 : "当前时间"
             }}。上报不等于处置完成。</small
-          ><button class="primary full" :disabled="ops.busy">
+          ><button
+            class="primary full"
+            :disabled="
+              ops.busy ||
+              (eventType === 'ROAD_DELAY' && includeRoad && !roadReport)
+            "
+          >
             提交异常 <Send :size="16" /></button
           ><button
             class="quiet full"

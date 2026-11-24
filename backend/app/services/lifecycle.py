@@ -91,6 +91,8 @@ def check_plan(session, plan, *, reservation_required=False):
     incident = session.get(m.Incident, plan.incident_id)
     if incident.version != plan.incident_version:
         expire_plan(session, plan, "STALE_INCIDENT")
+    if plan.metrics.get("road_strategy") and incident.current_plan_group_id != plan.plan_group_id:
+        expire_plan(session, plan, reason="Newer road comparison is available")
     try:
         snapshot = session.get(m.Snapshot, plan.snapshot_id)
         snapshot_valid(session, snapshot)
@@ -129,11 +131,18 @@ def validate_target(plan, snapshot, incident):
         )
         if [s["sequence_no"] for s in route] != list(range(1, len(route) + 1)):
             fail("STALE_PLAN", "Stored sequence is not continuous")
-        checked = simulate_route(
+        from app.services.road_recovery import simulation_inputs
+
+        inputs, delay = simulation_inputs(
             snapshot.payload,
+            plan.metrics.get("road_strategy"),
+            (incident.delay_minutes or 0) if vid == incident.vehicle_id else 0,
+        )
+        checked = simulate_route(
+            inputs,
             vid,
             [s["order_no"] for s in route],
-            incident.delay_minutes or 0 if vid == incident.vehicle_id else 0,
+            delay,
         )
         if not checked["constraints"]["passed"]:
             fail(

@@ -35,10 +35,15 @@ def incident_fingerprint(session, tenant_id, vehicle_id):
     )
 
 
-def submit(session, actor, body, settings, operation_id, job_type):
+def submit(session, actor, body, settings, operation_id, job_type, *, road=False):
     values = body.model_dump(mode="json")
     incident, _snapshot, _analysis = calculation_inputs(session, actor, values)
-    validate_facts(_snapshot.payload, job_type)
+    if not road:
+        if incident.facts.get("road_report") or _snapshot.payload.get("road_request"):
+            fail("INCIDENT_NOT_READY", "此事件已记录现场信息，请由调度员计算道路方案")
+        validate_facts(_snapshot.payload, job_type)
+    else:
+        values["road_recovery"] = True
     if incident.status == "MANUAL_REVIEW":
         audit(
             session,
@@ -139,6 +144,10 @@ def _inputs(session, job):
         fail("NOT_FOUND", status=404)
     actor = Actor(user.id, user.tenant_id, user.role, user.vehicle_id)
     incident, snapshot, analysis = calculation_inputs(session, actor, job.input)
+    if job.input.get("road_recovery") and (
+        actor.role != "DISPATCHER" or incident.current_calculation_job_id != job.id
+    ):
+        fail("STALE_INCIDENT", "道路计算已被替换")
     if job.input.get("incident_coordination_version") != incident.coordination_version:
         fail("INCIDENT_NOT_READY", "Calculation predates human or reservation coordination")
     if job.input.get("resource_incident_versions") != incident_fingerprint(
@@ -202,7 +211,7 @@ def run_job(job_id, *, session_factory, settings=None, worker_id=None):
         job.lease_expires_at = expires(settings.computation_budget_seconds + 30)
         job.attempts += 1
         job.started_at = m.utcnow()
-        fence, kind = job.attempts, job.job_type
+        fence, kind, road = job.attempts, job.job_type, job.input.get("road_recovery", False)
         payload, event = (
             deepcopy(snapshot.payload),
             {
@@ -217,11 +226,16 @@ def run_job(job_id, *, session_factory, settings=None, worker_id=None):
     # No DB session, vehicle lock, or incident lock survives this boundary.
     error, result = None, None
     try:
-        result = (
-            analyze_snapshot(payload, event)
-            if kind == "IMPACT_ANALYSIS"
-            else generate_candidates(payload, event)
-        )
+        if road:
+            from app.services.road_recovery import compute
+
+            result = compute(payload, event, settings)
+        else:
+            result = (
+                analyze_snapshot(payload, event)
+                if kind == "IMPACT_ANALYSIS"
+                else generate_candidates(payload, event)
+            )
     except DomainError as exc:
         error = exc
     except Exception:  # noqa: BLE001 - durable worker boundary sanitizes unexpected solver failures
@@ -265,6 +279,19 @@ def run_job(job_id, *, session_factory, settings=None, worker_id=None):
             if incident.current_calculation_job_id == job.id:
                 incident.status = "READY_FOR_ANALYSIS"
         else:
+            if road:
+                snapshot.payload = {**snapshot.payload, **result.pop("road_snapshot_patch")}
+                analysis_id = m.new_id()
+                analysis = m.Analysis(
+                    id=analysis_id,
+                    tenant_id=job.tenant_id,
+                    incident_id=incident.id,
+                    incident_version=incident.version,
+                    snapshot_id=snapshot.id,
+                    status="VALID",
+                    result={**result.pop("road_analysis"), "analysis_id": analysis_id},
+                )
+                session.add(analysis)
             group_id = m.new_id()
             output = []
             for item in result["plans"]:
@@ -313,7 +340,7 @@ def run_job(job_id, *, session_factory, settings=None, worker_id=None):
             if incident.current_calculation_job_id == job.id:
                 incident.status = "AWAITING_APPROVAL" if output else "MANUAL_REVIEW"
                 incident.current_plan_group_id = group_id if output else None
-                if output and settings.auto_approval_enabled:
+                if output and settings.auto_approval_enabled and not road:
                     from app.services.auto_approval import review_candidates
 
                     session.flush()

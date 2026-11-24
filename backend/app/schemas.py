@@ -66,6 +66,39 @@ class MapRefreshInput(StrictModel):
     node_ids: Annotated[list[Identifier], Field(min_length=1, max_length=21)] | None = None
 
 
+class RoadLocation(StrictModel):
+    longitude: Longitude
+    latitude: Latitude
+    captured_at: Timestamp
+    accuracy_m: Annotated[float, Field(strict=True, ge=0, le=250)] | None = None
+    source: Literal["GPS", "MAP_PIN"]
+    coordinate_system: Literal["WGS84", "GCJ02"]
+
+    @model_validator(mode="after")
+    def source_matches_coordinates(self):
+        if self.source == "GPS" and (self.coordinate_system != "WGS84" or self.accuracy_m is None):
+            raise ValueError("GPS requires WGS84 coordinates and reported accuracy")
+        if self.source == "MAP_PIN" and self.coordinate_system != "GCJ02":
+            raise ValueError("Map selections require GCJ02 coordinates")
+        return self
+
+
+class CongestionSegment(StrictModel):
+    road_name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
+    direction: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=48)]
+    start: tuple[Longitude, Latitude]
+    end: tuple[Longitude, Latitude]
+
+
+class RoadReport(StrictModel):
+    location: RoadLocation
+    congestion: CongestionSegment
+
+
+class RoadRecoveryInput(StrictModel):
+    expected_incident_version: Version
+
+
 class IncidentInput(StrictModel):
     mode: Literal["CREATE", "UPDATE"]
     incident_id: Identifier | None = None
@@ -149,13 +182,24 @@ class IncidentInput(StrictModel):
                 "reported_window_start",
                 "reported_window_end",
                 "occurred_at",
+                "road_report",
             }
-            if not any(getattr(self, f) is not None for f in mutable):
+            if not any(getattr(self, f, None) is not None for f in mutable):
                 raise ValueError("UPDATE requires a mutable business field")
         if (self.reported_window_start is None) != (self.reported_window_end is None):
             raise ValueError("Reported window values must be paired")
         if self.reported_window_start and self.reported_window_start > self.reported_window_end:
             raise ValueError("Reported window start must not exceed end")
+        return self
+
+
+class BrowserIncidentInput(IncidentInput):
+    road_report: RoadReport | None = None
+
+    @model_validator(mode="after")
+    def road_only(self):
+        if self.road_report and self.mode == "CREATE" and self.event_type != "ROAD_DELAY":
+            raise ValueError("Road evidence only applies to road delays")
         return self
 
 

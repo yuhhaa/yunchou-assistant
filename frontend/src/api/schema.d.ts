@@ -126,6 +126,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Incidents */
+        get: operations["list_incidents_api_v1_incidents_get"];
+        put?: never;
+        /** Browser Incident */
+        post: operations["browser_incident_api_v1_incidents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incidents/{incident_id}/road-recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Road Recovery */
+        post: operations["road_recovery_api_v1_incidents__incident_id__road_recovery_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/agent-tools/incidents": {
         parameters: {
             query?: never;
@@ -140,24 +175,6 @@ export interface paths {
          * @description 明确异常类型、车辆及必要事实后使用；道路延误必须有明确整数分钟数。CREATE 返回201，UPDATE 返回200；保存不等于解决，窗口须人工核实。写入必须复用逻辑幂等键。
          */
         post: operations["upsert_incident"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/incidents": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Incidents */
-        get: operations["list_incidents_api_v1_incidents_get"];
-        put?: never;
-        /** Incident */
-        post: operations["incident_api_v1_incidents_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -631,6 +648,35 @@ export interface components {
             /** Snapshot Id */
             snapshot_id: string;
         };
+        /** BrowserIncidentInput */
+        BrowserIncidentInput: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "CREATE" | "UPDATE";
+            /** Incident Id */
+            incident_id?: string | null;
+            /** Expected Incident Version */
+            expected_incident_version?: number | null;
+            /** Event Type */
+            event_type?: ("ROAD_DELAY" | "RECEIVING_WINDOW_CHANGE" | "VEHICLE_BREAKDOWN") | null;
+            /** Vehicle Id */
+            vehicle_id?: string | null;
+            /** Order No */
+            order_no?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Delay Minutes */
+            delay_minutes?: number | null;
+            /** Reported Window Start */
+            reported_window_start?: string | null;
+            /** Reported Window End */
+            reported_window_end?: string | null;
+            /** Occurred At */
+            occurred_at?: string | null;
+            road_report?: components["schemas"]["RoadReport"] | null;
+        };
         /** ChatInput */
         ChatInput: {
             /** Message */
@@ -656,6 +702,23 @@ export interface components {
              * Format: date-time
              */
             occurred_at: string;
+        };
+        /** CongestionSegment */
+        CongestionSegment: {
+            /** Road Name */
+            road_name: string;
+            /** Direction */
+            direction: string;
+            /** Start */
+            start: [
+                number,
+                number
+            ];
+            /** End */
+            end: [
+                number,
+                number
+            ];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -773,6 +836,43 @@ export interface components {
             expected_plan_version: number;
             /** Reason */
             reason: string;
+        };
+        /** RoadLocation */
+        RoadLocation: {
+            /** Longitude */
+            longitude: number;
+            /** Latitude */
+            latitude: number;
+            /**
+             * Captured At
+             * Format: date-time
+             */
+            captured_at: string;
+            /**
+             * Accuracy M
+             * @default null
+             */
+            accuracy_m: number | null;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "GPS" | "MAP_PIN";
+            /**
+             * Coordinate System
+             * @enum {string}
+             */
+            coordinate_system: "WGS84" | "GCJ02";
+        };
+        /** RoadRecoveryInput */
+        RoadRecoveryInput: {
+            /** Expected Incident Version */
+            expected_incident_version: number;
+        };
+        /** RoadReport */
+        RoadReport: {
+            location: components["schemas"]["RoadLocation"];
+            congestion: components["schemas"]["CongestionSegment"];
         };
         /** TaskTokenInput */
         TaskTokenInput: {
@@ -1126,6 +1226,8 @@ export interface components {
             reported_at: string;
             /** Occurred At */
             occurred_at: string | null;
+            /** @default null */
+            road_report: components["schemas"]["RoadReport"] | null;
             /** Can Analyze */
             can_analyze: boolean;
             /** Superseded Plan Ids */
@@ -1207,6 +1309,8 @@ export interface components {
             order_impacts: components["schemas"]["OrderImpact"][];
             /** Missing Fields */
             missing_fields: string[];
+            /** @default null */
+            road_comparison: components["schemas"]["RoadComparison"] | null;
         };
         /** Change */
         Change: {
@@ -1274,6 +1378,11 @@ export interface components {
         };
         /** Metrics */
         Metrics: {
+            /**
+             * Road Strategy
+             * @default null
+             */
+            road_strategy: ("WAIT" | "DETOUR" | "RESEQUENCE") | null;
             /** Unresolved Order Count */
             unresolved_order_count: number;
             /** Late Order Count */
@@ -1291,7 +1400,7 @@ export interface components {
             /** Total Distance M */
             total_distance_m: number;
             /** Extra Distance M */
-            extra_distance_m: number;
+            extra_distance_m: number | null;
             /** Computation Ms */
             computation_ms: number;
         };
@@ -1377,6 +1486,54 @@ export interface components {
             required_driver_ids: string[];
             /** Target Routes */
             target_routes: components["schemas"]["RouteStopInput"][];
+        };
+        /** RoadComparison */
+        RoadComparison: {
+            /** Origin */
+            origin: [
+                number,
+                number
+            ];
+            /** Avoid Area */
+            avoid_area: [
+                number,
+                number
+            ][];
+            /**
+             * Source
+             * @constant
+             */
+            source: "AMAP";
+            /** Wait Minutes */
+            wait_minutes: number;
+            /** Recommended Strategy */
+            recommended_strategy: ("WAIT" | "DETOUR" | "RESEQUENCE") | null;
+            /** Variants */
+            variants: components["schemas"]["RoadComparisonVariant"][];
+        };
+        /** RoadComparisonVariant */
+        RoadComparisonVariant: {
+            /**
+             * Strategy
+             * @enum {string}
+             */
+            strategy: "WAIT" | "DETOUR" | "RESEQUENCE";
+            /** Available */
+            available: boolean;
+            /**
+             * Reason
+             * @default null
+             */
+            reason: string | null;
+            /** @default null */
+            metrics: components["schemas"]["Metrics"] | null;
+            /** @default null */
+            constraints: components["schemas"]["Constraints"] | null;
+            /**
+             * Order Impacts
+             * @default null
+             */
+            order_impacts: components["schemas"]["OrderImpact"][] | null;
         };
         /** SearchScope */
         SearchScope: {
@@ -1980,6 +2137,19 @@ export interface components {
             operation_id: string | null;
             meta: components["schemas"]["Meta"];
         };
+        /** GCJ02MultiLineString */
+        GCJ02MultiLineString: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "MultiLineString";
+            /** Coordinates */
+            coordinates: [
+                number,
+                number
+            ][][];
+        };
         /** MapRouteOutput */
         MapRouteOutput: {
             /** Vehicle Id */
@@ -2004,7 +2174,16 @@ export interface components {
             distance_m: number;
             /** Duration Seconds */
             duration_seconds: number;
-            geometry: components["schemas"]["GCJ02LineString"] | null;
+            /** Geometry */
+            geometry: components["schemas"]["GCJ02LineString"] | components["schemas"]["GCJ02MultiLineString"] | null;
+            /**
+             * Reported Origin
+             * @default null
+             */
+            reported_origin: [
+                number,
+                number
+            ] | null;
             /**
              * Source
              * @constant
@@ -2900,134 +3079,6 @@ export interface operations {
             };
         };
     };
-    upsert_incident: {
-        parameters: {
-            query?: never;
-            header: {
-                "X-Request-ID"?: string;
-                "X-Trace-ID"?: string;
-                "X-Contract-Version"?: "1.0";
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["IncidentInput"];
-            };
-        };
-        responses: {
-            /** @description 成功，data包含结构化业务结果。 */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-            /** @description 异常已保存，尚未代表解决。 */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-            /** @description 标准错误，data为null。 */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-            /** @description 标准错误，data为null。 */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-            /** @description 标准错误，data为null。 */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-            /** @description 标准错误，data为null。 */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-            /** @description 标准错误，data为null。 */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-            /** @description 标准错误，data为null。 */
-            426: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-            /** @description 标准错误，data为null。 */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-            /** @description 标准错误，data为null。 */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-            /** @description 标准错误，data为null。 */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-            /** @description 标准错误，data为null。 */
-            504: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
-                };
-            };
-        };
-    };
     list_incidents_api_v1_incidents_get: {
         parameters: {
             query?: never;
@@ -3142,7 +3193,256 @@ export interface operations {
             };
         };
     };
-    incident_api_v1_incidents_post: {
+    browser_incident_api_v1_incidents_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Request-ID"?: string;
+                "X-Trace-ID"?: string;
+                "X-Contract-Version"?: "1.0";
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserIncidentInput"];
+            };
+        };
+        responses: {
+            /** @description 成功，data包含结构化业务结果。 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+            /** @description 异常已保存，尚未代表解决。 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            426: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[IncidentOutput]"];
+                };
+            };
+        };
+    };
+    road_recovery_api_v1_incidents__incident_id__road_recovery_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Request-ID"?: string;
+                "X-Trace-ID"?: string;
+                "X-Contract-Version"?: "1.0";
+                "Idempotency-Key": string;
+            };
+            path: {
+                incident_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoadRecoveryInput"];
+            };
+        };
+        responses: {
+            /** @description 持久化受理；请查询任务状态。 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[QueuedOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[QueuedOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[QueuedOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[QueuedOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[QueuedOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[QueuedOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            426: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[QueuedOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[QueuedOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[QueuedOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[QueuedOutput]"];
+                };
+            };
+            /** @description 标准错误，data为null。 */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Envelope[QueuedOutput]"];
+                };
+            };
+        };
+    };
+    upsert_incident: {
         parameters: {
             query?: never;
             header: {

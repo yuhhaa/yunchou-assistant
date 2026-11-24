@@ -91,6 +91,7 @@ let incidents: Incident[] = [
     reported_window_end: null,
     reported_at: clock,
     occurred_at: clock,
+    road_report: null,
     can_analyze: true,
     superseded_plan_ids: [],
     next_action: "ANALYZE_IMPACT",
@@ -249,6 +250,7 @@ function analysis(incident: Incident): Analysis {
     incident_version: incident.incident_version,
     snapshot_id: context.snapshot_id,
     analysis_status: "VALID",
+    road_comparison: null,
     risk_order_count: 2,
     order_impacts: context.orders
       .filter((o) => o.assigned_vehicle_id === incident.vehicle_id)
@@ -313,6 +315,7 @@ function candidates(inc: Incident, a: Analysis): Schema["GenerationOutput"] {
       status: "PENDING_APPROVAL",
       expires_at: new Date(Date.now() + 300000).toISOString(),
       metrics: {
+        road_strategy: null,
         unresolved_order_count: 0,
         late_order_count: n ? 1 : 0,
         high_priority_delay_minutes: 0,

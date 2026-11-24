@@ -957,6 +957,17 @@
             },
             "title": "Missing Fields",
             "type": "array"
+          },
+          "road_comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoadComparison"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [
@@ -1016,6 +1027,67 @@
           "new_sequence_no"
         ],
         "title": "Change",
+        "type": "object"
+      },
+      "CongestionSegment": {
+        "additionalProperties": false,
+        "properties": {
+          "road_name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Road Name",
+            "type": "string"
+          },
+          "direction": {
+            "maxLength": 48,
+            "minLength": 1,
+            "title": "Direction",
+            "type": "string"
+          },
+          "start": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "maximum": 180,
+                "minimum": -180,
+                "type": "number"
+              },
+              {
+                "maximum": 90,
+                "minimum": -90,
+                "type": "number"
+              }
+            ],
+            "title": "Start",
+            "type": "array"
+          },
+          "end": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "maximum": 180,
+                "minimum": -180,
+                "type": "number"
+              },
+              {
+                "maximum": 90,
+                "minimum": -90,
+                "type": "number"
+              }
+            ],
+            "title": "End",
+            "type": "array"
+          }
+        },
+        "required": [
+          "road_name",
+          "direction",
+          "start",
+          "end"
+        ],
+        "title": "CongestionSegment",
         "type": "object"
       },
       "Constraints": {
@@ -1912,6 +1984,17 @@
             ],
             "title": "Occurred At"
           },
+          "road_report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RoadReport"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "can_analyze": {
             "title": "Can Analyze",
             "type": "boolean"
@@ -1993,6 +2076,23 @@
       "Metrics": {
         "additionalProperties": false,
         "properties": {
+          "road_strategy": {
+            "anyOf": [
+              {
+                "enum": [
+                  "WAIT",
+                  "DETOUR",
+                  "RESEQUENCE"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Road Strategy"
+          },
           "unresolved_order_count": {
             "title": "Unresolved Order Count",
             "type": "integer"
@@ -2026,8 +2126,15 @@
             "type": "integer"
           },
           "extra_distance_m": {
-            "title": "Extra Distance M",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Distance M"
           },
           "computation_ms": {
             "title": "Computation Ms",
@@ -2491,6 +2598,235 @@
           "poll_after_seconds"
         ],
         "title": "QueuedOutput",
+        "type": "object"
+      },
+      "RoadComparison": {
+        "additionalProperties": false,
+        "properties": {
+          "origin": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Origin",
+            "type": "array"
+          },
+          "avoid_area": {
+            "items": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            },
+            "title": "Avoid Area",
+            "type": "array"
+          },
+          "source": {
+            "const": "AMAP",
+            "title": "Source",
+            "type": "string"
+          },
+          "wait_minutes": {
+            "title": "Wait Minutes",
+            "type": "integer"
+          },
+          "recommended_strategy": {
+            "anyOf": [
+              {
+                "enum": [
+                  "WAIT",
+                  "DETOUR",
+                  "RESEQUENCE"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommended Strategy"
+          },
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/RoadComparisonVariant"
+            },
+            "title": "Variants",
+            "type": "array"
+          }
+        },
+        "required": [
+          "origin",
+          "avoid_area",
+          "source",
+          "wait_minutes",
+          "recommended_strategy",
+          "variants"
+        ],
+        "title": "RoadComparison",
+        "type": "object"
+      },
+      "RoadComparisonVariant": {
+        "additionalProperties": false,
+        "properties": {
+          "strategy": {
+            "enum": [
+              "WAIT",
+              "DETOUR",
+              "RESEQUENCE"
+            ],
+            "title": "Strategy",
+            "type": "string"
+          },
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          },
+          "metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Metrics"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "constraints": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Constraints"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "order_impacts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/OrderImpact"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Order Impacts"
+          }
+        },
+        "required": [
+          "strategy",
+          "available"
+        ],
+        "title": "RoadComparisonVariant",
+        "type": "object"
+      },
+      "RoadLocation": {
+        "additionalProperties": false,
+        "properties": {
+          "longitude": {
+            "maximum": 180,
+            "minimum": -180,
+            "title": "Longitude",
+            "type": "number"
+          },
+          "latitude": {
+            "maximum": 90,
+            "minimum": -90,
+            "title": "Latitude",
+            "type": "number"
+          },
+          "captured_at": {
+            "format": "date-time",
+            "title": "Captured At",
+            "type": "string"
+          },
+          "accuracy_m": {
+            "anyOf": [
+              {
+                "maximum": 250,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Accuracy M"
+          },
+          "source": {
+            "enum": [
+              "GPS",
+              "MAP_PIN"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "coordinate_system": {
+            "enum": [
+              "WGS84",
+              "GCJ02"
+            ],
+            "title": "Coordinate System",
+            "type": "string"
+          }
+        },
+        "required": [
+          "longitude",
+          "latitude",
+          "captured_at",
+          "source",
+          "coordinate_system"
+        ],
+        "title": "RoadLocation",
+        "type": "object"
+      },
+      "RoadReport": {
+        "additionalProperties": false,
+        "properties": {
+          "location": {
+            "$ref": "#/components/schemas/RoadLocation"
+          },
+          "congestion": {
+            "$ref": "#/components/schemas/CongestionSegment"
+          }
+        },
+        "required": [
+          "location",
+          "congestion"
+        ],
+        "title": "RoadReport",
         "type": "object"
       },
       "RouteStopInput": {
