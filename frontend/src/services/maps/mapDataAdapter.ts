@@ -18,6 +18,7 @@ export type DeliveryLayer = {
   role: "current" | "original" | "candidate";
   coordinates: LngLat[];
   geometryKind?: "ROAD" | "SCHEMATIC";
+  snapSchematicRoute?: boolean;
   vehicleId?: string;
   distanceM?: number | null;
   durationSeconds?: number | null;

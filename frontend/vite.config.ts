@@ -1,15 +1,17 @@
 import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
+import { resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { amapDevelopmentProxy } from "./server/amapProxy";
 export default defineConfig(({ mode, command }) => {
   if (command === "serve" && existsSync(".env.amap-server.local"))
     loadEnvFile(".env.amap-server.local");
   const env = loadEnv(mode, process.cwd(), "");
+  const dependencies = resolve("node_modules");
   if (
     Object.keys(env).some((name) =>
-      /^VITE_.*AMAP.*(SECURITY|JSCODE)/i.test(name),
+      /^VITE_.*AMAP.*(SECURITY|JSCODE|WEB_SERVICE_KEY)/i.test(name),
     )
   )
     throw new Error("高德安全密钥不得配置为 VITE_ 变量，请移至服务端配置。");
@@ -18,6 +20,12 @@ export default defineConfig(({ mode, command }) => {
     server: {
       host: "127.0.0.1",
       port: 5173,
+      fs: {
+        allow: [
+          process.cwd(),
+          ...(existsSync(dependencies) ? [realpathSync(dependencies)] : []),
+        ],
+      },
       watch: {
         ignored: [
           "**/playwright-report/**",

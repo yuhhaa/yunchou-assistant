@@ -19,7 +19,10 @@ import type {
 } from "../../services/maps/mapDataAdapter";
 import MapToolbar from "./MapToolbar.vue";
 import { markerContent, infoContent } from "./mapMarkers";
-import { drawRouteLayers } from "./routeLayers";
+import { drawRouteLayers, routeColor, type DrawnRoute } from "./routeLayers";
+import { snapToRoads } from "../../services/maps/roadSnap";
+import { mapThemes, savedTheme, saveTheme } from "./mapThemes";
+import type { AmapPolylineLike } from "../../services/maps/amapSdk";
 const props = defineProps<{
   model: MapModel;
   selectedOrder: string;
@@ -43,6 +46,8 @@ const emit = defineEmits<{
   pick: [LngLat];
 }>();
 const host = ref<HTMLElement>(),
+  snapped = ref(false),
+  is3d = ref(false),
   ready = ref(false),
   error = ref("");
 const sdkLoader = inject(amapLoaderKey, loadAmap);
@@ -89,7 +94,9 @@ function update() {
   if (!map || !sdk) return;
   info?.close();
   overlays.forEach((o) => o.setMap(null));
-  overlays = drawRouteLayers(sdk, map, props.model.layers);
+  const drawn: DrawnRoute[] = [];
+  overlays = drawRouteLayers(sdk, map, props.model.layers, drawn);
+  void snapRoutes(drawn, ++snapGeneration);
   for (const point of props.model.markers) {
     const marker = new sdk.Marker({
       map,
@@ -142,6 +149,106 @@ function update() {
   );
   if (selected) show(selected, false);
 }
+const envStyle = import.meta.env.VITE_AMAP_MAP_STYLE?.trim();
+const theme = ref(savedTheme());
+const mapStyle = ref(envStyle || theme.value.style);
+let movers: AmapPolylineLike[] = [];
+let snapGeneration = 0;
+async function snapRoutes(drawn: DrawnRoute[], run: number) {
+  movers.forEach((m) => {
+    m.stopMove?.();
+    m.setMap(null);
+  });
+  movers = [];
+  snapped.value = false;
+  if (!sdk || !map) return;
+  const eligible = drawn.filter(
+    ({ layer }) =>
+      layer.snapSchematicRoute &&
+      layer.geometryKind === "SCHEMATIC" &&
+      layer.coordinates.length > 1,
+  );
+  let allSnapped = eligible.length > 0;
+  for (const { layer, lines } of eligible) {
+    const road = await snapToRoads(layer.coordinates);
+    if (!alive || run !== snapGeneration || !map) return;
+    if (!road) {
+      allSnapped = false;
+      continue;
+    }
+    for (const line of lines) {
+      line.setPath?.(road);
+      line.setOptions?.(
+        layer.role === "original"
+          ? { strokeStyle: "dashed", strokeDasharray: [6, 8] }
+          : { strokeStyle: "solid", strokeDasharray: undefined },
+      );
+    }
+    if (layer.role !== "original" && !immediate()) {
+      const car = new sdk.Marker({
+        map,
+        position: road[0],
+        anchor: "center",
+        zIndex: 130,
+        content: `<span class="amap-mover" style="--c:${routeColor(layer)}"></span>`,
+      }) as AmapPolylineLike;
+      car.moveAlong?.(road, {
+        duration: Math.max(8000, road.length * 60),
+        autoRotation: false,
+        circlable: true,
+      });
+      movers.push(car);
+    }
+  }
+  snapped.value = allSnapped;
+}
+let buildings:
+  { setMap?(m: unknown): void; show?(): void; hide?(): void } | undefined;
+function ensureBuildings() {
+  if (buildings || !sdk?.Buildings || !map) return;
+  buildings = new sdk.Buildings({
+    zooms: [15, 20],
+    zIndex: 10,
+    heightFactor: 2.2,
+    opacity: 0.92,
+    wallColor: theme.value.wall,
+    roofColor: theme.value.roof,
+  });
+  map.add?.(buildings);
+}
+function setTheme(id: string) {
+  const next = mapThemes.find((t) => t.id === id);
+  if (!next || !map) return;
+  theme.value = next;
+  mapStyle.value = next.style;
+  saveTheme(id);
+  map.setMapStyle?.(next.style);
+  (
+    map as unknown as { setOptions?(o: Record<string, unknown>): void }
+  ).setOptions?.({ skyColor: next.swatch });
+  if (buildings) {
+    buildings.setMap?.(null);
+    buildings = undefined;
+    if (is3d.value) ensureBuildings();
+  }
+}
+function toggle3d() {
+  if (!map) return;
+  is3d.value = !is3d.value;
+  const quick = immediate();
+  if (is3d.value) {
+    ensureBuildings();
+    buildings?.show?.();
+    map.setPitch?.(60, quick, 900);
+    map.setRotation?.(-20, quick, 900);
+    if ((map.getZoom?.() ?? 17) < 16.8) map.setZoom?.(17, quick, 900);
+  } else {
+    buildings?.hide?.();
+    map.setPitch?.(0, quick, 700);
+    map.setRotation?.(0, quick, 700);
+    setTimeout(fit, quick ? 0 : 720);
+  }
+}
 async function init() {
   const run = ++generation;
   error.value = "";
@@ -151,15 +258,20 @@ async function init() {
     if (!alive || run !== generation || !host.value) return;
     sdk = loaded;
     map = new sdk.Map(host.value, {
-      viewMode: "2D",
+      viewMode: "3D",
       resizeEnable: true,
       zoom: demoCity.zoom,
       center: props.model.center || demoCity.center,
-      mapStyle: "amap://styles/normal",
+      mapStyle: mapStyle.value,
       pitch: 0,
       dragEnable: true,
       zoomEnable: true,
-      rotateEnable: false,
+      rotateEnable: true,
+      pitchEnable: true,
+      showBuildingBlock: true,
+      features: ["bg", "road", "building", "point"],
+      buildingAnimation: true,
+      skyColor: theme.value.swatch,
     });
     map.addControl(
       new sdk.Scale({ position: "LB", offset: new sdk.Pixel(12, 48) }),
@@ -205,7 +317,15 @@ async function init() {
   }
 }
 function cleanup() {
+  is3d.value = false;
+  snapGeneration++;
+  buildings = undefined;
   clearTimeout(completeTimer);
+  movers.forEach((m) => {
+    m.stopMove?.();
+    m.setMap(null);
+  });
+  movers = [];
   observer?.disconnect();
   intersection?.disconnect();
   info?.close();
@@ -254,7 +374,10 @@ defineExpose({ fit });
 </script>
 <template>
   <div
-    class="amap-workspace"
+    :class="[
+      'amap-workspace amap-neo',
+      { 'is-3d': is3d, 'is-light': !theme.dark },
+    ]"
     :data-sdk-ready="ready"
     :data-business-points="model.markers.length"
     :data-route-layers="model.layers.length"
@@ -284,11 +407,19 @@ defineExpose({ fit });
       <b
         >武汉模拟配送 ·
         {{ model.local ? "本地响应样例" : "后端 SIMULATION" }}</b
-      ><span>模拟连线，不代表实际行驶道路 · 非车辆实时GPS</span
+      ><span>{{
+        snapped
+          ? "模拟配送路线已按高德路网贴合，仅供展示 · 非车辆实时GPS"
+          : "模拟连线，不代表实际行驶道路 · 非车辆实时GPS"
+      }}</span
       ><span>{{ model.version }}</span>
     </div>
     <MapToolbar
       :ready="ready"
+      :is3d="is3d"
+      :theme="theme.id"
+      @theme="setTheme"
+      @toggle3d="toggle3d"
       @zoom-in="map?.zoomIn()"
       @zoom-out="map?.zoomOut()"
       @fit="fit"

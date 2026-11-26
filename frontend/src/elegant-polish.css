@@ -1,0 +1,161 @@
+/* Elegant polish: refined depth, calm motion, real-map framing. Additive layer – delete this file + its import to revert. */
+:root {
+  --gold: #b8892f;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --shadow-soft: 0 1px 2px #10261f0a, 0 12px 32px -12px #10261f1f;
+}
+body {
+  background:
+    radial-gradient(1200px 600px at 85% -10%, #9be1c11f, transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, #e4ef7814, transparent 60%),
+    var(--paper);
+  background-attachment: fixed;
+}
+/* Glass header */
+.app-header {
+  position: sticky;
+  top: 0;
+  background: color-mix(in srgb, var(--paper) 78%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.brand-symbol i { transition: transform 0.6s var(--ease); }
+.brand:hover .brand-symbol i:nth-child(1) { transform: translateY(-2px); }
+.brand:hover .brand-symbol i:nth-child(3) { transform: translateY(2px); }
+/* Nav: sliding underline instead of heavy pills */
+.pill-nav a { position: relative; transition: color 0.25s ease, background 0.25s ease; }
+.pill-nav a::after {
+  content: ""; position: absolute; left: 50%; right: 50%; bottom: 3px; height: 2px;
+  border-radius: 2px; background: var(--gold); transition: left 0.35s var(--ease), right 0.35s var(--ease);
+}
+.pill-nav a.router-link-active::after, .pill-nav a:hover::after { left: 30%; right: 30%; }
+/* Live status dot breathes */
+.status-dot { animation: yc-breathe 2.4s ease-in-out infinite; }
+@keyframes yc-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 #2b705266; }
+  60% { box-shadow: 0 0 0 7px #2b705200; }
+}
+/* Panels: hairline gradient edge, gentle lift */
+.panel {
+  position: relative;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+}
+.panel::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(140deg, #9be1c180, transparent 35%, transparent 70%, #b8892f55);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+}
+@media (hover: hover) {
+  .panel:hover { transform: translateY(-2px); box-shadow: 0 2px 4px #10261f0d, 0 20px 40px -16px #10261f2e; }
+}
+/* Entrance */
+.business-main > *, .overview-main > *, .incident-map-main > * {
+  animation: yc-rise 0.6s var(--ease) both;
+}
+.business-main > *:nth-child(2), .overview-main > *:nth-child(2) { animation-delay: 0.06s; }
+.business-main > *:nth-child(3), .overview-main > *:nth-child(3) { animation-delay: 0.12s; }
+.business-main > *:nth-child(n + 4), .overview-main > *:nth-child(n + 4) { animation-delay: 0.18s; }
+@keyframes yc-rise { from { opacity: 0; transform: translateY(10px); } }
+/* Numbers read like instruments */
+.mono, .decision-metrics b, .fleet-major b { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.page-heading h1 {
+  background: linear-gradient(100deg, var(--ink) 30%, #2b7052 70%, var(--gold));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+/* Buttons */
+.primary { background-image: linear-gradient(135deg, var(--forest), #24574a); transition: filter 0.25s ease, transform 0.25s var(--ease); }
+.primary:not(:disabled):hover { filter: brightness(1.08); transform: translateY(-1px); }
+.secondary { transition: border-color 0.25s ease, background 0.25s ease; }
+.secondary:not(:disabled):hover { border-color: var(--gold); }
+/* Real map framing: soft vignette + rounded clip */
+.map-view { border-radius: var(--radius); overflow: hidden; position: relative; box-shadow: var(--shadow-soft); }
+.map-view::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2; border-radius: inherit;
+  box-shadow: inset 0 0 0 1px #17372f14, inset 0 0 60px #10261f14;
+}
+.amap-info-content { border-radius: 10px !important; box-shadow: var(--shadow-soft) !important; border: 1px solid var(--line) !important; }
+/* Login: elegant motion */
+.login-story h1 {
+  background: linear-gradient(100deg, #f3f4e8, var(--mint) 55%, var(--lemon));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.login-story, .login-form-wrap { animation: yc-rise 0.8s var(--ease) both; }
+.login-form-wrap { animation-delay: 0.12s; }
+.login-form-wrap input { transition: border-color 0.25s ease, box-shadow 0.25s ease; }
+.login-form-wrap input:focus { border-color: #2b7052; box-shadow: 0 0 0 4px #9be1c133; }
+
+/* ---- Wuhan map: dark real basemap, glowing routes, moving vehicles ---- */
+.amap-neo { position: relative; background: #0b1a2a; }
+.amap-neo::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: radial-gradient(ellipse at center, transparent 55%, #06101cb3 100%);
+}
+.amap-neo .amap-data-notice {
+  background: #0d1f2ccc !important; color: #d8e6ef !important;
+  border: 1px solid #6fa8ff33 !important; backdrop-filter: blur(10px);
+}
+.amap-neo .amap-data-notice b { color: #f5c451; }
+.amap-mover {
+  display: block; width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 3px solid var(--c, #3ddcb0);
+  box-shadow: 0 0 0 0 var(--c, #3ddcb0), 0 0 16px var(--c, #3ddcb0);
+  animation: yc-mover 1.8s ease-out infinite;
+}
+@keyframes yc-mover {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 70%, transparent), 0 0 16px var(--c); }
+  100% { box-shadow: 0 0 0 14px transparent, 0 0 16px var(--c); }
+}
+
+
+/* ---- 2D / 3D toggle ---- */
+.amap-toolbar .amap-3d-toggle {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  font: 600 9px/1 "DM Mono", Consolas, monospace; letter-spacing: 0.06em;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+.amap-toolbar .amap-3d-toggle.active { background: #f5c451; color: #10261f; }
+.amap-neo.is-3d::after { background: radial-gradient(ellipse at 50% 70%, transparent 45%, #06101cd9 100%); }
+.amap-neo.is-3d::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 22%; z-index: 4; pointer-events: none;
+  background: linear-gradient(#0b1a2acc, transparent);
+}
+
+/* ---- Map colour themes ---- */
+/* No overlays on light themes: map stays fully clear. */
+.amap-neo.is-light::before, .amap-neo.is-light::after,
+.amap-neo.is-light.is-3d::before, .amap-neo.is-light.is-3d::after { content: none !important; background: none !important; }
+.amap-workspace .amap-toolbar { overflow: visible; z-index: 30; }
+.amap-toolbar > .amap-theme-wrap > button { border-radius: 13px 13px 0 0; }
+.amap-toolbar > .amap-theme-wrap + button { border-top: 1px solid #e0e4dc; }
+.amap-toolbar > button:last-child { border-radius: 0 0 13px 13px; }
+.amap-neo.is-light { background: #eef1ec; }
+.amap-neo.is-light::after { background: radial-gradient(ellipse at center, transparent 62%, #17372f14 100%); }
+.amap-neo.is-light.is-3d::before { background: linear-gradient(#e6eef2e6, transparent); }
+.amap-neo.is-light.is-3d::after { background: radial-gradient(ellipse at 50% 70%, transparent 55%, #17372f1f 100%); }
+.amap-neo.is-light .amap-data-notice {
+  background: #fafbf6e6 !important; color: var(--ink-2) !important; border: 1px solid var(--line) !important;
+}
+.amap-neo.is-light .amap-data-notice b { color: var(--forest); }
+.amap-theme-wrap { position: relative; }
+.amap-theme-menu {
+  position: absolute; right: calc(100% + 10px); bottom: 0; width: 150px; padding: 8px;
+  background: #fafbf6f2; backdrop-filter: blur(12px); border: 1px solid var(--line);
+  border-radius: 12px; box-shadow: var(--shadow-soft); display: grid; gap: 2px; z-index: 20;
+  animation: yc-rise 0.25s var(--ease) both;
+}
+.amap-theme-menu b { font-size: 11px; color: var(--muted); font-weight: 500; padding: 4px 8px 6px; }
+.amap-theme-menu button {
+  display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: 8px;
+  background: transparent; color: var(--ink); font-size: 12px; text-align: left; width: 100%; height: auto;
+}
+.amap-theme-menu button span { flex: 1; }
+.amap-theme-menu button:hover { background: #17372f0d; }
+.amap-theme-menu button.on { background: #17372f12; font-weight: 600; }
+.amap-theme-menu i { width: 16px; height: 16px; border-radius: 50%; border: 1px solid #17372f26; flex-shrink: 0; }
+.amap-toolbar .amap-theme-toggle.active { background: var(--forest); color: #fff; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

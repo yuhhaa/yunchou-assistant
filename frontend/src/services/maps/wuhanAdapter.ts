@@ -162,6 +162,7 @@ export function adaptWuhanMap(input: {
     model.layers.push({
       role,
       geometryKind: "SCHEMATIC",
+      snapSchematicRoute: true,
       vehicleId: r.vehicle_id,
       coordinates: r.geometry.coordinates as [number, number][],
       distanceM: r.distance_m,

@@ -20,6 +20,17 @@ export interface AmapInstance {
   zoomIn(): void;
   zoomOut(): void;
   resize?(): void;
+  setPitch?(pitch: number, immediately?: boolean, duration?: number): void;
+  setRotation?(
+    rotation: number,
+    immediately?: boolean,
+    duration?: number,
+  ): void;
+  getZoom?(): number;
+  setMapStyle?(style: string): void;
+  add?(layer: unknown): void;
+  getCenter?(): unknown;
+  setZoom?(zoom: number, immediately?: boolean, duration?: number): void;
 }
 export interface AmapInfoWindow {
   open(map: AmapInstance, position: LngLat): void;
@@ -35,4 +46,17 @@ export interface AmapSDK {
   InfoWindow: new (options: Record<string, unknown>) => AmapInfoWindow;
   Pixel: new (x: number, y: number) => unknown;
   Scale: new (options?: Record<string, unknown>) => unknown;
+  Buildings?: new (options?: Record<string, unknown>) => AmapLayer;
+}
+export interface AmapPolylineLike extends AmapOverlay {
+  setPath?(path: LngLat[]): void;
+  setOptions?(options: Record<string, unknown>): void;
+  moveAlong?(path: LngLat[], options: Record<string, unknown>): void;
+  stopMove?(): void;
+}
+
+export interface AmapLayer {
+  setMap?(map: AmapInstance | null): void;
+  show?(): void;
+  hide?(): void;
 }

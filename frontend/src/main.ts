@@ -17,6 +17,8 @@ import "./driver-responsive.css";
 import "./components/maps/amap.css";
 import "./design-upgrade.css";
 import "./product-refinement.css";
+import "./elegant-polish.css";
+import "./readability.css";
 const router = createRouter({
   history: createWebHashHistory(),
   scrollBehavior: () => ({ top: 0 }),

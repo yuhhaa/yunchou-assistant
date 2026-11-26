@@ -78,3 +78,7 @@ docs/github-upload-review/
 /docs/backend-20261104-integration.md
 
 /docs/amap-backend-requirements.md
+
+# Local preview helpers and pre-change backups.
+/_backup_before_polish/
+/start-preview.bat

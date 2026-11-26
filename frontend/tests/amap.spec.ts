@@ -52,7 +52,7 @@ test("官方 Loader 单次加载，地图更新不重建，选择/候选/销毁�
     .poll(() =>
       page.evaluate(() =>
         (window as any).__amapTest.lines.some(
-          (l: any) => l.strokeColor === "#d86a21",
+          (l: any) => l.strokeColor === "#f5c451",
         ),
       ),
     )

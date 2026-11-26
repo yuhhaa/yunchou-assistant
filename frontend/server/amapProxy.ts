@@ -146,12 +146,102 @@ export function createAmapMiddleware() {
     req.on("aborted", () => upstream.destroy());
   };
 }
+const roadPrefix = "/_AMapRoad/driving";
+// Server-side road snapping with the Web Service key; the key never reaches the browser.
+export function createRoadMiddleware() {
+  return (req: IncomingMessage, res: ServerResponse, next: () => void) => {
+    if (!req.url || req.url.split("?", 1)[0] !== roadPrefix) return next();
+    if (
+      !["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(
+        req.socket.remoteAddress || "",
+      )
+    )
+      return json(res, 403, { error: "LOCAL_DEVELOPMENT_ONLY" });
+    if (req.method !== "GET")
+      return json(res, 405, { error: "METHOD_NOT_ALLOWED" });
+    try {
+      if (
+        [req.headers.origin, req.headers.referer].some(
+          (value) => value && new URL(value).host !== req.headers.host,
+        ) ||
+        req.headers["sec-fetch-site"] === "cross-site"
+      )
+        return json(res, 403, { error: "AMAP_SAME_ORIGIN_ONLY" });
+    } catch {
+      return json(res, 403, { error: "AMAP_SAME_ORIGIN_ONLY" });
+    }
+    if (req.url.length > 2048)
+      return json(res, 414, { error: "AMAP_REQUEST_TOO_LONG" });
+    const key = process.env.AMAP_WEB_SERVICE_KEY?.trim() || "";
+    if (!/^[a-f0-9]{32}$/i.test(key))
+      return json(res, 503, { error: "AMAP_WEB_SERVICE_KEY_MISSING" });
+    const incoming = new URL(req.url, "http://local");
+    function isCoordinate(value: string) {
+      if (!/^-?\d{1,3}\.\d{1,8},-?\d{1,2}\.\d{1,8}$/.test(value)) return false;
+      const [longitude, latitude] = value.split(",").map(Number);
+      return Math.abs(longitude!) <= 180 && Math.abs(latitude!) <= 90;
+    }
+    const origin = incoming.searchParams.get("origin") || "";
+    const destination = incoming.searchParams.get("destination") || "";
+    const waypoints = incoming.searchParams.get("waypoints") || "";
+    if (
+      !isCoordinate(origin) ||
+      !isCoordinate(destination) ||
+      (waypoints && !waypoints.split(";").every(isCoordinate)) ||
+      waypoints.split(";").length > 16
+    )
+      return json(res, 400, { error: "BAD_COORDINATES" });
+    const target = new URL("https://restapi.amap.com/v3/direction/driving");
+    target.searchParams.set("key", key);
+    target.searchParams.set("origin", origin);
+    target.searchParams.set("destination", destination);
+    if (waypoints) target.searchParams.set("waypoints", waypoints);
+    target.searchParams.set("strategy", "0");
+    target.searchParams.set("extensions", "base");
+    const fail = () => {
+      if (!res.destroyed && !res.writableEnded)
+        json(res, 502, { error: "AMAP_UPSTREAM_UNAVAILABLE" });
+    };
+    const upstream = https.get(target, { timeout: 12000 }, (response) => {
+      if (response.statusCode !== 200) {
+        response.resume();
+        return fail();
+      }
+      const chunks: Buffer[] = [];
+      let size = 0;
+      response.on("data", (chunk: Buffer) => {
+        size += chunk.length;
+        if (size > 2 * 1024 * 1024) upstream.destroy();
+        else chunks.push(chunk);
+      });
+      response.on("error", fail);
+      response.on("end", () => {
+        if (res.destroyed || res.writableEnded) return;
+        const body = Buffer.concat(chunks).toString("utf8");
+        if (body.includes(key))
+          return json(res, 502, { error: "AMAP_UNSAFE_UPSTREAM_RESPONSE" });
+        res.writeHead(200, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "no-store",
+          "X-Content-Type-Options": "nosniff",
+        });
+        res.end(body);
+      });
+    });
+    upstream.on("error", fail);
+    upstream.on("timeout", () => upstream.destroy());
+    res.on("close", () => {
+      if (!res.writableEnded) upstream.destroy();
+    });
+  };
+}
 
 export function amapDevelopmentProxy(): Plugin {
   return {
     name: "local-amap-security-proxy",
     apply: "serve",
     configureServer(server) {
+      server.middlewares.use(createRoadMiddleware());
       server.middlewares.use(createAmapMiddleware());
     },
   };

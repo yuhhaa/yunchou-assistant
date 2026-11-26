@@ -196,6 +196,11 @@ test("司机在地图选择车辆位置及拥堵两端后提交现场信息", as
       point,
     );
   await expect(submit).toBeEnabled();
+  await form.getByRole("button", { name: "切换到 3D 立体" }).click();
+  await expect(
+    form.getByRole("button", { name: "切换到 2D 平面" }),
+  ).toBeVisible();
+  expect(posts.some(({ path }) => path === "/incidents")).toBe(false);
   await submit.click();
   await expect
     .poll(
@@ -314,9 +319,14 @@ test("SCHEMATIC虚线与ROAD实线保持独立，候选不成为CURRENT", () => 
   expect(lines.map((l) => l.strokeStyle)).toEqual([
     "dashed",
     "dashed",
+    "dashed",
+    "solid",
     "solid",
   ]);
-  expect(lines[1].strokeColor).toBe("#d86a21");
+  expect(lines.slice(1, 3).map((line) => line.strokeColor)).toEqual([
+    "#f5c451",
+    "#f5c451",
+  ]);
 });
 test("司机JWT默认作用域、任务与Marker双向选中", async ({ page }) => {
   const { maps } = await api(page);
@@ -385,9 +395,11 @@ test("候选409清空预览、刷新业务对象，不当作有效路线", async
     "0",
   );
   expect(state.contextReads()).toBeGreaterThan(1);
-  const n = state.maps.length;
+  const previewRequests = () =>
+    state.maps.filter((map) => map.query.includes("plan_id=")).length;
+  const n = previewRequests();
   await page.waitForTimeout(300);
-  expect(state.maps.length).toBe(n);
+  expect(previewRequests()).toBe(n);
 });
 test("业务地图断线不静默切换本地样例，任务与底图独立", async ({ page }) => {
   await api(page, "DRIVER", { outage: true });

@@ -61,7 +61,7 @@ export async function loadAmap(config = amapConfiguration()): Promise<AmapSDK> {
         AMapLoader.load({
           key: config.key,
           version: "2.0",
-          plugins: ["AMap.Scale"],
+          plugins: ["AMap.Scale", "AMap.MoveAnimation"],
         }) as Promise<AmapSDK>,
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => reject(new Error()), 22000);
