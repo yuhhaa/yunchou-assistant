@@ -64,6 +64,11 @@ export const mapThemes: MapTheme[] = [
   },
 ];
 const KEY = "yunchou.mapTheme";
+/** Presentation only: share the map palette with the application chrome. */
+export function applyAppTheme(id: string) {
+  const selected = mapThemes.find((item) => item.id === id) || mapThemes[0]!;
+  document.documentElement.dataset.mapTheme = selected.id;
+}
 export function savedTheme(): MapTheme {
   const id = (() => {
     try {
@@ -75,6 +80,7 @@ export function savedTheme(): MapTheme {
   return mapThemes.find((t) => t.id === id) || mapThemes[0]!;
 }
 export function saveTheme(id: string) {
+  applyAppTheme(id);
   try {
     localStorage.setItem(KEY, id);
   } catch {

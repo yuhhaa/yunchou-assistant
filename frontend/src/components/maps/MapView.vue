@@ -43,6 +43,7 @@ const props = withDefaults(
     vehicleId: string;
     selectedOrder?: string;
     riskOrders?: string[];
+    incidentVehicleIds?: string[];
     changes?: Schema["Change"][];
     candidate?: boolean;
     planId?: string | null;
@@ -61,6 +62,7 @@ const props = withDefaults(
     dataMode?: string;
     inspect?: boolean;
     reportedPosition?: { coordinates: LngLat; capturedAt: string };
+    dotsOnly?: boolean;
   }>(),
   {
     selectedOrder: "",
@@ -308,6 +310,8 @@ watch(
           :changed-orders="changes?.map((c) => c.order_no) || []"
           :next-order="nextOrder"
           :retry="retry"
+          :dots-only="dotsOnly"
+          :incident-vehicle-ids="incidentVehicleIds"
           @select="select"
           @select-node="emit('select-node', $event)"
           @ready="ready"

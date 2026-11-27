@@ -5,7 +5,23 @@ import { validCoordinate } from "./mapDataAdapter";
 const cache = new Map<string, Promise<LngLat[] | null>>();
 const format = ([lng, lat]: LngLat) => `${lng.toFixed(6)},${lat.toFixed(6)}`;
 
+// AMap keys allow only a few requests per second: queue them, retry on QPS limits.
+let queue: Promise<unknown> = Promise.resolve();
+function throttled<T>(task: () => Promise<T>): Promise<T> {
+  const run = queue.then(task, task);
+  const gap = () => new Promise((r) => setTimeout(r, 380));
+  queue = run.then(gap, gap);
+  return run;
+}
 async function roadLeg(points: LngLat[]): Promise<LngLat[] | null> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const result = await throttled(() => roadLegOnce(points));
+    if (result !== "RETRY") return result;
+    await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+  }
+  return null;
+}
+async function roadLegOnce(points: LngLat[]): Promise<LngLat[] | null | "RETRY"> {
   const params = new URLSearchParams({
     origin: format(points[0]!),
     destination: format(points[points.length - 1]!),
@@ -19,7 +35,11 @@ async function roadLeg(points: LngLat[]): Promise<LngLat[] | null> {
     });
     if (!response.ok) return null;
     const data = await response.json();
-    if (data.status !== "1") return null;
+    if (data.status !== "1") {
+      if (/QPS|LIMIT|OVER/i.test(String(data.info || ""))) return "RETRY";
+      console.warn("[道路贴合] 高德驾车规划失败:", data.info, data.infocode || "");
+      return null;
+    }
     const points: LngLat[] = [];
     for (const step of data.route?.paths?.[0]?.steps || []) {
       for (const pair of String(step.polyline || "").split(";")) {

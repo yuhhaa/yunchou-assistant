@@ -1,0 +1,146 @@
+/* ColorSpace Matching / Classy / Spot palettes, adapted for readable app UI.
+   Map colors, route semantics, layout, and business state are unchanged. */
+:root[data-map-theme] {
+  --paper: #eef0ec; --paper-2: #e3e8e2; --surface: #fafcf9;
+  --ink: #253b40; --ink-2: #465d60; --muted: #637673;
+  --forest: #396474; --deep: #243e49; --mint: #cad3cb;
+  --lemon: #e4f7d2; --gold: #6e7f56; --accent-ink: #294638;
+  --hero: #2f4858; --hero-text: #f4f8f4; --hero-muted: #cedbd6;
+  --on-primary: #fff; --focus: #396474;
+  --line: #ced8d2; --rule-strong: #a3b7b0;
+  --success: #2b7052; --success-bg: #e0eddd;
+  --warning: #81531e; --warning-bg: #f4e8cf;
+  --danger: #a23d38; --danger-bg: #f7e5e1;
+  --glass: #243e49e8; --glass-light: #fafcf9ed;
+  --shadow-soft: 0 2px 4px #243e4905, 0 16px 40px -22px #243e4933;
+  --shadow: var(--shadow-soft);
+  color-scheme: light;
+}
+:root[data-map-theme="normal"] {
+  --paper: #f5f3ea; --paper-2: #ece9dc; --surface: #fffdf6;
+  --ink: #343e34; --ink-2: #555f52; --muted: #6e7566;
+  --forest: #33675f; --deep: #254c46; --mint: #d2d5c6;
+  --lemon: #f9f2cb; --gold: #8a7133; --accent-ink: #524525;
+  --hero: #254c46; --hero-text: #fffdf5; --hero-muted: #d2d5c6;
+  --line: #dddccd; --rule-strong: #b2ac87; --focus: #33675f;
+}
+:root[data-map-theme="fresh"] {
+  --paper: #eaf3ed; --paper-2: #dcefe2; --surface: #f9fdf9;
+  --ink: #253f36; --ink-2: #426256; --muted: #5e776c;
+  --forest: #176657; --deep: #154c42; --mint: #b1d7be;
+  --lemon: #d2fadf; --gold: #076876; --accent-ink: #214e38;
+  --hero: #1c5049; --hero-text: #f0fff5; --hero-muted: #b6d3c7;
+  --line: #c7ddd1; --rule-strong: #8eb49b; --focus: #076876;
+}
+:root[data-map-theme="grey"] {
+  --paper: #eceff1; --paper-2: #dde3e7; --surface: #fafcfd;
+  --ink: #293c47; --ink-2: #4a606d; --muted: #627681;
+  --forest: #364954; --deep: #273944; --mint: #84b1cb;
+  --lemon: #e6c1dc; --gold: #765563; --accent-ink: #523446;
+  --hero: #364954; --hero-text: #f4f8fb; --hero-muted: #c5d6e1;
+  --line: #ccd5dc; --rule-strong: #9aaebb; --focus: #466f86;
+}
+:root[data-map-theme="macaron"] {
+  --paper: #faf0f2; --paper-2: #f4e3e8; --surface: #fffbfc;
+  --ink: #503940; --ink-2: #6e595f; --muted: #826c75;
+  --forest: #805266; --deep: #573c48; --mint: #c4f0ec;
+  --lemon: #f4e6cd; --gold: #276865; --accent-ink: #594529;
+  --hero: #564148; --hero-text: #fff6f8; --hero-muted: #e6c9d3;
+  --line: #e6d1d9; --rule-strong: #ce9eae; --focus: #276865;
+}
+:root[data-map-theme="darkblue"] {
+  --paper: #0d1c2e; --paper-2: #1b3048; --surface: #13263d;
+  --ink: #e5eff9; --ink-2: #c0cfdf; --muted: #9dacc1;
+  --forest: #9bcbe6; --deep: #0b1728; --mint: #42536d;
+  --lemon: #f0c166; --gold: #f0c166; --accent-ink: #34270f;
+  --hero: #1b334f; --hero-text: #eff8ff; --hero-muted: #b6cae0;
+  --line: #30445d; --rule-strong: #536a85; --focus: #def2ff;
+  --on-primary: #13263d;
+  --success: #92d9b5; --success-bg: #153d38;
+  --warning: #f3cc81; --warning-bg: #443622;
+  --danger: #ffb4ad; --danger-bg: #482f3c;
+  --glass: #13263ded; --glass-light: #13263ded;
+  --shadow-soft: 0 2px 4px #0002, 0 16px 40px -22px #0009;
+  color-scheme: dark;
+}
+html[data-map-theme] body {
+  color: var(--ink);
+  background: radial-gradient(ellipse at 90% 0%, color-mix(in srgb, var(--mint) 26%, transparent), transparent 48%), var(--paper);
+}
+html[data-map-theme] :is(.app, .business-main, .driver-main) { color: var(--ink); }
+html[data-map-theme] .app-header {
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+  border-color: var(--line);
+}
+html[data-map-theme] :is(.panel, .modal, .assistant-panel, .assistant-panel > .collaboration-header,
+  .chat-compose, .map-view, .incident-detail, .linked-orders-panel, .login-form-side) {
+  background: var(--surface); border-color: var(--line); color: var(--ink);
+}
+html[data-map-theme] .panel::before {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--mint) 70%, transparent), transparent 40%, transparent 75%, color-mix(in srgb, var(--gold) 25%, transparent));
+}
+html[data-map-theme] :is(.page-heading h1, .business-main h1) {
+  background: none; color: var(--ink); -webkit-text-fill-color: currentColor;
+}
+html[data-map-theme] :is(.primary, .send-button) {
+  background: var(--forest); background-image: none; color: var(--on-primary);
+}
+html[data-map-theme] :is(.lemon-button, .amap-toolbar .amap-3d-toggle.active) {
+  background: var(--lemon); color: var(--accent-ink);
+}
+html[data-map-theme] :is(.secondary, .quiet, .icon-button, .map-controls button) {
+  color: var(--ink-2); border-color: var(--line);
+}
+html[data-map-theme] :is(.secondary, .chat-compose textarea, .chat-compose select,
+  .report-form input, .report-form textarea, .report-form select, .search-box,
+  .login-form-wrap input, .plans-context select, .map-workspace-actions select) {
+  background: var(--surface); color: var(--ink); border-color: var(--rule-strong);
+}
+html[data-map-theme] :is(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
+html[data-map-theme] :is(button, a, input, textarea, select):focus-visible {
+  outline-color: var(--focus);
+}
+html[data-map-theme] :is(.pill-nav, .app-header .pill-nav, .driver-desktop-nav,
+  .driver-bottom-nav, .filter-tabs, .candidate-tabs, .chat-context, .job-progress,
+  .confirmation-summary, .chat-message.user, .task-banner) {
+  background: var(--paper-2); border-color: var(--line); color: var(--ink);
+}
+html[data-map-theme] :is(.pill-nav a.router-link-active, .driver-desktop-nav button.active,
+  .driver-bottom-nav .active, .filter-tabs button.active, .candidate-tabs button.active) {
+  background: var(--forest); color: var(--on-primary);
+}
+html[data-map-theme] .next-stop-card {
+  background: linear-gradient(135deg, var(--hero), color-mix(in srgb, var(--hero) 90%, var(--mint)));
+  color: var(--hero-text); border: 1px solid color-mix(in srgb, var(--mint) 30%, var(--hero));
+  box-shadow: var(--shadow-soft);
+}
+html[data-map-theme] .next-stop-card :is(h2, b, .mono) { color: var(--hero-text); }
+html[data-map-theme] .next-stop-card :is(.eyebrow, small, .next-stop-top, .driver-eta-note) { color: var(--hero-muted); }
+html[data-map-theme] :is(.linked-order:hover, .history-item:hover, .data-table tbody tr:hover) { background: var(--paper-2); }
+html[data-map-theme] :is(.route-stop::before, .driver-timeline::before) { border-color: var(--line); }
+html[data-map-theme] .amap-theme-menu {
+  background: color-mix(in srgb, var(--surface) 96%, transparent); border-color: var(--line);
+  box-shadow: var(--shadow-soft); width: 174px; padding: 10px;
+}
+html[data-map-theme] .amap-theme-menu button { color: var(--ink); }
+html[data-map-theme] .amap-theme-menu button:is(:hover, .on) { background: var(--paper-2); }
+html[data-map-theme] .amap-toolbar { background: var(--surface); border-color: var(--line); }
+html[data-map-theme] .amap-toolbar button { background: var(--surface); color: var(--ink); border-color: var(--line); }
+html[data-map-theme] .amap-toolbar .amap-theme-toggle.active { background: var(--forest); color: var(--on-primary); }
+html[data-map-theme] .amap-neo .amap-data-notice {
+  background: var(--glass-light) !important; color: var(--ink-2) !important; border-color: var(--line) !important;
+}
+html[data-map-theme] .amap-neo .amap-data-notice b { color: var(--ink); }
+html[data-map-theme] .amap-info-content { background: var(--surface) !important; color: var(--ink) !important; }
+html[data-map-theme] .amap-marker-name { background: var(--surface); color: var(--ink); border-color: var(--line); }
+html[data-map-theme] .amap-delivery-marker.stop .amap-marker-badge { color: #293c47; }
+html[data-map-theme] .amap-delivery-marker.stop:is(.next, .changed, .selected) .amap-marker-badge { color: var(--accent-ink); }
+html[data-map-theme] .amap-delivery-marker:is(.vehicle, .warehouse) .amap-marker-badge {
+  background: var(--forest); color: var(--on-primary);
+}
+html[data-map-theme] .map-controls .icon-button { background: var(--surface); color: var(--ink); }
+html[data-map-theme] .driver-header-role { color: var(--muted); }
+html[data-map-theme] .amap-delivery-info { color: var(--ink); }
+/* Keep warning, error and success meanings stable in all six themes. */
+html[data-map-theme] .feedback.error { color: var(--danger); background: var(--danger-bg); }
+html[data-map-theme] .feedback.notice { color: var(--success); background: var(--success-bg); }

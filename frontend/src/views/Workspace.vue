@@ -174,6 +174,12 @@ const nextStop = computed(() =>
     .sort((a, b) => a.sequence_no - b.sequence_no)
     .find((s) => s.status !== "COMPLETED" && s.status !== "CANCELLED"),
 );
+const incidentVehicleIds = computed(() =>
+  ops.incidents.map((incident) => incident.vehicle_id).filter(Boolean),
+);
+const showSimulatedTraffic = computed(
+  () => ops.mode === "demo" && ops.demoScenario === "wuhan",
+);
 const filteredIncidents = computed(() =>
   ops.incidents.filter(
     (i) =>
@@ -278,7 +284,7 @@ const {
   previewError: previewMapError,
   refresh: refreshMaps,
 } = useDeliveryMaps({
-  enabled: () => route.path !== "/overview" || showNetwork.value,
+  enabled: () => true,
   scope: mapScopeForRequest,
   preview: () => validMapPlan.value,
 });
@@ -512,8 +518,27 @@ onUnmounted(() => {
 <template>
   <main v-if="route.path === '/overview'" class="overview-main">
     <section class="city-stage">
-      <div class="city-photo" />
-      <div class="city-scrim" />
+      <div class="overview-live-map" :class="{ 'simulated-traffic': showSimulatedTraffic }">
+        <MapView
+          :demo-map="currentMap"
+          :data-loading="mapLoading"
+          :data-error="mapError"
+          :local-sample="showSimulatedTraffic"
+          @refresh="refreshMaps"
+          @select-node="selectMapNode"
+          :context="ops.context"
+          :stops="baseStops"
+          vehicle-id=""
+          v-model:selected-order="selectedOrder"
+          :risk-orders="riskOrders"
+          :incident-vehicle-ids="incidentVehicleIds"
+          :data-mode="ops.mode"
+          :compact="true"
+          :inspect="false"
+          :dots-only="showSimulatedTraffic"
+          title="城市实时配送"
+        />
+      </div>
       <div class="stage-topline">
         <span><span class="status-dot" /> 城市配送总览</span
         ><span
@@ -608,6 +633,7 @@ onUnmounted(() => {
           :vehicle-id="mapScope"
           v-model:selected-order="selectedOrder"
           :risk-orders="riskOrders"
+          :incident-vehicle-ids="incidentVehicleIds"
           :data-mode="ops.mode"
           :compact="true"
           title="所选车辆配送网络"
@@ -763,6 +789,7 @@ onUnmounted(() => {
             "
             v-model:selected-order="selectedOrder"
             :risk-orders="riskOrders"
+            :incident-vehicle-ids="incidentVehicleIds"
             :data-mode="ops.mode"
             :candidate="!!validMapPlan"
             :plan-id="validMapPlan?.id || null"
@@ -1331,6 +1358,7 @@ onUnmounted(() => {
             :vehicle-id="inc?.vehicle_id || mapVehicle"
             v-model:selected-order="selectedOrder"
             :risk-orders="riskOrders"
+            :incident-vehicle-ids="incidentVehicleIds"
             :candidate="!!validMapPlan"
             :plan-id="validMapPlan?.id || null"
             :plan-version="validMapPlan?.version || null"
@@ -1863,6 +1891,7 @@ onUnmounted(() => {
           :selected-order="selectedOrder"
           @update:selected-order="selectOrder"
           :risk-orders="riskOrders"
+          :incident-vehicle-ids="incidentVehicleIds"
           :next-order="nextStop?.order_no"
           :data-mode="ops.mode"
           title="我的配送路线"

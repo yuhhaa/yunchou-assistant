@@ -19,9 +19,11 @@ import type {
 } from "../../services/maps/mapDataAdapter";
 import MapToolbar from "./MapToolbar.vue";
 import { markerContent, infoContent } from "./mapMarkers";
-import { drawRouteLayers, routeColor, type DrawnRoute } from "./routeLayers";
+import { drawRouteLayers, type DrawnRoute } from "./routeLayers";
 import { snapToRoads } from "../../services/maps/roadSnap";
 import { mapThemes, savedTheme, saveTheme } from "./mapThemes";
+import { createComets } from "./comets";
+import { simulatedDepots, depotContent, depotRoutes } from "./depots";
 import type { AmapPolylineLike } from "../../services/maps/amapSdk";
 const props = defineProps<{
   model: MapModel;
@@ -36,6 +38,8 @@ const props = defineProps<{
   nextOrder?: string;
   retry: number;
   picking?: boolean;
+  dotsOnly?: boolean;
+  incidentVehicleIds?: string[];
 }>();
 const emit = defineEmits<{
   select: [string];
@@ -96,6 +100,21 @@ function update() {
   overlays.forEach((o) => o.setMap(null));
   const drawn: DrawnRoute[] = [];
   overlays = drawRouteLayers(sdk, map, props.model.layers, drawn);
+  if (props.dotsOnly)
+    for (const d of simulatedDepots)
+      overlays.push(
+        new sdk.Marker({
+          map,
+          position: d.coordinates,
+          anchor: "bottom-center",
+          offset: new sdk.Pixel(0, 0),
+          zIndex: d.main ? 115 : 110,
+          content: depotContent(d),
+        }),
+      );
+  if (props.dotsOnly)
+    for (const { lines } of drawn)
+      for (const line of lines) line.setOptions?.({ strokeOpacity: 0, showDir: false, isOutline: false });
   void snapRoutes(drawn, ++snapGeneration);
   for (const point of props.model.markers) {
     const marker = new sdk.Marker({
@@ -153,6 +172,7 @@ const envStyle = import.meta.env.VITE_AMAP_MAP_STYLE?.trim();
 const theme = ref(savedTheme());
 const mapStyle = ref(envStyle || theme.value.style);
 let movers: AmapPolylineLike[] = [];
+let comets: ReturnType<typeof createComets> | undefined;
 let snapGeneration = 0;
 async function snapRoutes(drawn: DrawnRoute[], run: number) {
   movers.forEach((m) => {
@@ -160,6 +180,8 @@ async function snapRoutes(drawn: DrawnRoute[], run: number) {
     m.setMap(null);
   });
   movers = [];
+  comets?.stop();
+  comets = undefined;
   snapped.value = false;
   if (!sdk || !map) return;
   const eligible = drawn.filter(
@@ -178,27 +200,53 @@ async function snapRoutes(drawn: DrawnRoute[], run: number) {
     }
     for (const line of lines) {
       line.setPath?.(road);
-      line.setOptions?.(
-        layer.role === "original"
-          ? { strokeStyle: "dashed", strokeDasharray: [6, 8] }
-          : { strokeStyle: "solid", strokeDasharray: undefined },
-      );
+      if (!props.dotsOnly)
+        line.setOptions?.(
+          layer.role === "original"
+            ? { strokeStyle: "dashed", strokeDasharray: [6, 8] }
+            : { strokeStyle: "solid", strokeDasharray: undefined },
+        );
     }
     if (layer.role !== "original" && !immediate()) {
-      const car = new sdk.Marker({
-        map,
-        position: road[0],
-        anchor: "center",
-        zIndex: 130,
-        content: `<span class="amap-mover" style="--c:${routeColor(layer)}"></span>`,
-      }) as AmapPolylineLike;
-      car.moveAlong?.(road, {
-        duration: Math.max(8000, road.length * 60),
-        autoRotation: false,
-        circlable: true,
-      });
-      movers.push(car);
+      const alert = !!layer.vehicleId && !!props.incidentVehicleIds?.includes(layer.vehicleId);
+      const color = alert ? "#ff4d4f" : "#22c55e";
+      if (props.dotsOnly) {
+        (comets ||= createComets(sdk!, map!)).add(road, color, alert);
+        comets.setLite(is3d.value);
+        continue;
+      }
+      const fleets = 2;
+      const loop = [...road, ...road.slice().reverse().slice(1)];
+      for (let n = 0; n < fleets; n++) {
+        const start = Math.floor((loop.length * n) / fleets);
+        const path = [...loop.slice(start), ...loop.slice(1, start + 1)];
+        const car = new sdk.Marker({
+          map,
+          position: path[0],
+          anchor: "center",
+          zIndex: 130,
+          content: `<span class="amap-truck${alert ? " alert" : ""}" style="--c:${color}"></span>`,
+        }) as AmapPolylineLike;
+        car.moveAlong?.(path, {
+          duration: Math.max(16000, path.length * 90),
+          autoRotation: false,
+          circlable: true,
+        });
+        movers.push(car);
+      }
     }
+  }
+  if (props.dotsOnly && sdk && map) {
+    const jobs = depotRoutes.map(async (r) => {
+      const d = simulatedDepots.find((x) => x.id === r.depot);
+      if (!d) return;
+      const road = await snapToRoads([d.coordinates, ...r.stops, d.coordinates]);
+      if (!alive || run !== snapGeneration || !map) return;
+      if (!road) return console.warn("[仓库车流] 道路规划失败:", r.depot);
+      (comets ||= createComets(sdk!, map!)).add(road, d.main ? "#f5c451" : "#22c55e", false, 2);
+      comets.setLite(is3d.value);
+    });
+    await Promise.all(jobs);
   }
   snapped.value = allSnapped;
 }
@@ -207,14 +255,22 @@ let buildings:
 function ensureBuildings() {
   if (buildings || !sdk?.Buildings || !map) return;
   buildings = new sdk.Buildings({
-    zooms: [15, 20],
+    zooms: [16, 20],
     zIndex: 10,
-    heightFactor: 2.2,
+    heightFactor: 1.6,
     opacity: 0.92,
     wallColor: theme.value.wall,
     roofColor: theme.value.roof,
   });
   map.add?.(buildings);
+  if (!is3d.value) buildings.hide?.();
+}
+// Prewarm the 3D building layer while idle so the first 2D→3D switch does not stall.
+function prewarm3d() {
+  const idle =
+    (window as unknown as { requestIdleCallback?(cb: () => void, o?: object): void })
+      .requestIdleCallback || ((cb: () => void) => setTimeout(cb, 1200));
+  idle(() => ensureBuildings(), { timeout: 3000 });
 }
 function setTheme(id: string) {
   const next = mapThemes.find((t) => t.id === id);
@@ -232,21 +288,35 @@ function setTheme(id: string) {
     if (is3d.value) ensureBuildings();
   }
 }
+let transitionTimer: ReturnType<typeof setTimeout> | undefined;
 function toggle3d() {
   if (!map) return;
   is3d.value = !is3d.value;
   const quick = immediate();
+  clearTimeout(transitionTimer);
   if (is3d.value) {
     ensureBuildings();
-    buildings?.show?.();
-    map.setPitch?.(60, quick, 900);
-    map.setRotation?.(-20, quick, 900);
-    if ((map.getZoom?.() ?? 17) < 16.8) map.setZoom?.(17, quick, 900);
+    // Tilt first at current zoom, then zoom in: fewer tiles/buildings requested at once.
+    map.setPitch?.(60, quick, 700);
+    map.setRotation?.(-20, quick, 700);
+    const zoomIn = (map.getZoom?.() ?? 17) < 16.8;
+    transitionTimer = setTimeout(
+      () => {
+        if (zoomIn) map?.setZoom?.(17, quick, 600);
+        buildings?.show?.();
+      },
+      quick ? 0 : 720,
+    );
   } else {
     buildings?.hide?.();
-    map.setPitch?.(0, quick, 700);
-    map.setRotation?.(0, quick, 700);
-    setTimeout(fit, quick ? 0 : 720);
+    map.setPitch?.(0, quick, 600);
+    map.setRotation?.(0, quick, 600);
+    transitionTimer = setTimeout(
+      () => {
+        fit();
+      },
+      quick ? 0 : 620,
+    );
   }
 }
 async function init() {
@@ -268,7 +338,7 @@ async function init() {
       zoomEnable: true,
       rotateEnable: true,
       pitchEnable: true,
-      showBuildingBlock: true,
+      showBuildingBlock: false,
       features: ["bg", "road", "building", "point"],
       buildingAnimation: true,
       skyColor: theme.value.swatch,
@@ -284,6 +354,11 @@ async function init() {
     }
     map.on("complete", () => {
       if (!alive || run !== generation) return;
+      prewarm3d();
+      for (const name of ["dragstart", "movestart", "zoomstart"])
+        map?.on(name, () => comets?.setBusy(true));
+      for (const name of ["dragend", "moveend", "zoomend"])
+        map?.on(name, () => comets?.setBusy(false));
       clearTimeout(completeTimer);
       ready.value = true;
       error.value = "";
@@ -317,6 +392,7 @@ async function init() {
   }
 }
 function cleanup() {
+  clearTimeout(transitionTimer);
   is3d.value = false;
   snapGeneration++;
   buildings = undefined;
@@ -326,6 +402,8 @@ function cleanup() {
     m.setMap(null);
   });
   movers = [];
+  comets?.stop();
+  comets = undefined;
   observer?.disconnect();
   intersection?.disconnect();
   info?.close();
@@ -340,6 +418,8 @@ watch(
     props.model,
     props.selectedOrder,
     props.riskOrders,
+    props.incidentVehicleIds,
+    props.dotsOnly,
     props.changedOrders,
     props.nextOrder,
   ],

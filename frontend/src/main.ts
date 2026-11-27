@@ -19,6 +19,9 @@ import "./design-upgrade.css";
 import "./product-refinement.css";
 import "./elegant-polish.css";
 import "./readability.css";
+import "./map-theme-ui.css";
+import { applyAppTheme, savedTheme } from "./components/maps/mapThemes";
+applyAppTheme(savedTheme().id);
 const router = createRouter({
   history: createWebHashHistory(),
   scrollBehavior: () => ({ top: 0 }),
